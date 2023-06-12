@@ -53,3 +53,18 @@ def check_file_exists(file_path):
     """
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"{file_path} is missing.")
+
+
+def display_runtime(runtime) -> str:
+    """
+    Helper function to display the runtime of our pipeline, i.e. if runtime > 60 seconds output minutes.
+    :param runtime: runtime in seconds
+    :return: String to display the runtime in seconds or minutes
+    """
+    if runtime > 60:
+        runtime = runtime / 60
+        return f"took {runtime:.2f} minutes"
+    else:
+        return f"took {runtime:.2f} seconds"
+
+
