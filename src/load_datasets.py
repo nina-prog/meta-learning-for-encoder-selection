@@ -5,7 +5,7 @@ from typing import Union
 
 
 def load_dataset(path: Union[Path, str]) -> pd.DataFrame:
-    return pd.read_csv(path)
+    return pd.read_csv(path, index_col=0)
 
 
 def load_rankings(path: Union[Path, str]) -> pd.DataFrame:
