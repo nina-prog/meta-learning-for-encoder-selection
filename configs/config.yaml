@@ -1,0 +1,8 @@
+paths:
+    dataset_path: "data/raw/dataset.csv"
+    rankings_path: "data/raw/rankings.csv"
+    train_values_path: "data/raw/dataset_X_train.csv.csv"
+    train_labels_path: "data/raw/dataset_y_train.csv.csv"
+    test_values_path: "data/raw/dataset_X_test.csv.csv"
+    result_path: "data/predictions/regression_targaryen_prediction.csv.csv"
+
