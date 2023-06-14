@@ -5,6 +5,7 @@ import time
 
 import src.utils
 import src.load_datasets
+import src.modelling
 
 
 def main():
@@ -16,27 +17,39 @@ def main():
     # Parse config file
     # Track time for execution
     start_time = time.time()
-    print(20*"=" + " Starting Pipeline " + 20*"=")
+    print(20 * "=" + " Starting pipeline " + 20 * "=")
 
     # Read config file
     cfg = src.utils.parse_args()
+    verbosity = cfg["general"]["verbosity"]
+
     # Load Data
-    dataset = src.load_datasets.load_dataset(path = cfg["paths"]["dataset_path"])
-    rankings = src.load_datasets.load_rankings(path = cfg["paths"]["rankings_path"])
+    dataset = src.load_datasets.load_dataset(path=cfg["paths"]["dataset_path"], verbosity=verbosity)
+    rankings = src.load_datasets.load_rankings(path=cfg["paths"]["rankings_path"], verbosity=verbosity)
 
     """
     Add here pipeline steps, e.g. preprocessing, fitting, predictions ...
-    
-    # Preprocessing
-    # Fitting
-    # ...
-    
     """
+
+    # Split data into train test
+    X_train, X_test, y_train, y_test = src.modelling.train_test_split_data(train_data=dataset,
+                                                                           split_size=cfg["modelling"]["split_size"])
+    # Perform CV and train model
+    model, cv_result = src.modelling.train_model(model=cfg["modelling"]["model"],
+                                                 train_data=X_train,
+                                                 train_labels=y_train,
+                                                 scoring=cfg["modelling"]["scoring"],
+                                                 hyperparam_grid=None,
+                                                 verbosity=verbosity,
+                                                 k_fold=cfg["modelling"]["k_fold"])
+    # Make predictions
+    src.modelling.make_prediction(model=model, test_data=X_test,
+                                  result_path=cfg["paths"]["result_path"], verbosity=verbosity)
 
     # Track time for total runtime and display end of pipeline
     runtime = time.time() - start_time
-    print(20 * "=" + f" Pipeline Finished ({src.utils.display_runtime(runtime)}) " + 20 * "=")
+    print(20 * "=" + f" Pipeline finished ({src.utils.display_runtime(runtime)}) " + 20 * "=")
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     main()
