@@ -28,7 +28,7 @@ def load_config(config_path):
 def parse_args():
     """
     Function that parses the config.yaml and return the cfg as dict
-    :return: dict -- parsed config file
+    :return: dict -- parsed config file, str -- path to the config file
     """
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -37,7 +37,8 @@ def parse_args():
 
     # Load config file
     cfg = load_config(args.config)
-    return cfg
+    cfg_path = args.config
+    return cfg, cfg_path
 
 
 def check_file_exists(file_path):
@@ -66,5 +67,4 @@ def display_runtime(runtime) -> str:
         return f"took {runtime:.2f} minutes"
     else:
         return f"took {runtime:.2f} seconds"
-
 
