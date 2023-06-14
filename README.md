@@ -33,7 +33,7 @@ This repository contains our project of the phase 2 of the **Practical Course: D
 1. Clone the repository by running the following command in your terminal:
 
    ```
-   https://git.scc.kit.edu/data-science-lab-2023/group-5-targaryen/phase-2.git
+   git clone https://git.scc.kit.edu/data-science-lab-2023/group-5-targaryen/phase-2.git
    ```
 
 
@@ -61,7 +61,7 @@ required by the pipeline.
 6. Run the pipeline with the following command:
 
    ```
-   python3 main.py --config "configs/config.yml"
+   python3 main.py --config "configs/config.yaml"
    ```
 
 By following these steps, you should be able to successfully run the  pipeline on the data and obtain the desired 
