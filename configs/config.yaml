@@ -1,8 +1,15 @@
+general:
+    verbosity: 1
 paths:
     dataset_path: "data/raw/dataset.csv"
     rankings_path: "data/raw/rankings.csv"
     train_values_path: "data/raw/dataset_X_train.csv.csv"
     train_labels_path: "data/raw/dataset_y_train.csv.csv"
     test_values_path: "data/raw/dataset_X_test.csv.csv"
-    result_path: "data/predictions/regression_targaryen_prediction.csv.csv"
-
+    result_path: "data/predictions/regression_targaryen_prediction.csv"
+modelling:
+    model: "Dummy"
+    scoring: ["neg_mean_squared_error", "r2"]
+    k_fold: 5
+    hyperparam_grid: None
+    split_size: 0.2
