@@ -27,17 +27,28 @@ def load_config(config_path):
 
 def parse_args():
     """
-    Function that parses the config.yaml and return the cfg as dict
-    :return: dict -- parsed config file, str -- path to the config file
+    Function that parses the arguments
+    :return: Parsed arguments
     """
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", help="Path to the config file")
+    parser.add_argument("--subsample", default=None, type=int, help="Number of samples to use")
     args = parser.parse_args()
 
+    return args
+
+
+def parse_config(args):
+    """
+    Parses the config file, given the parsed arguments
+    :param args: Parsed arguments
+    :return: dict: parsed config file, str: path to the config file
+    """
     # Load config file
     cfg = load_config(args.config)
     cfg_path = args.config
+
     return cfg, cfg_path
 
 
