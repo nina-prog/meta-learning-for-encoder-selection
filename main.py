@@ -48,7 +48,7 @@ def main():
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
-    with mlflow.start_run(tags = {"train_set_size": len(X_train)}):
+    with mlflow.start_run(tags=src.mlflow_registry.get_mlflow_tags(X_train, cfg)) as run:
         # Perform CV and train model
         model, cv_result = src.modelling.train_model(model=cfg["modelling"]["model"],
                                                      train_data=X_train,
@@ -57,9 +57,10 @@ def main():
                                                      hyperparam_grid=None,
                                                      verbosity=verbosity,
                                                      k_fold=cfg["modelling"]["k_fold"])
-        src.mlflow_registry.log_model_eval(cv_result, cfg, cfg_path)
+        # Log additional information to mlflow run
+        src.mlflow_registry.log_model_eval(cv_result, cfg, cfg_path, run, verbosity)
 
-    # Make predictions
+    # Make final predictions on test data
     src.modelling.make_prediction(model=model, test_data=X_test,
                                   result_path=cfg["paths"]["result_path"], verbosity=verbosity)
 
