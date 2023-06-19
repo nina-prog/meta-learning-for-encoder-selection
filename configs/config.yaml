@@ -3,6 +3,7 @@ general:
 paths:
     dataset_path: "data/raw/dataset.csv"
     rankings_path: "data/raw/rankings.csv"
+    graph_path: "data/raw/graph.adjlist"
     train_values_path: "data/raw/dataset_X_train.csv.csv"
     train_labels_path: "data/raw/dataset_y_train.csv.csv"
     test_values_path: "data/raw/dataset_X_test.csv.csv"
