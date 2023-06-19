@@ -31,9 +31,12 @@ def main():
     verbosity = cfg["general"]["verbosity"]
 
     # Load Data
-    dataset = src.load_datasets.load_dataset(path=cfg["paths"]["dataset_path"],
-                                             verbosity=verbosity,
-                                             subsample=args.subsample)
+    X_train, y_train = src.load_datasets.load_train_data(path=cfg["paths"]["train_data_path"],
+                                                         verbosity=verbosity,
+                                                         subsample=args.subsample)
+    X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
+                                              verbosity=verbosity,
+                                              subsample=args.subsample)
     rankings = src.load_datasets.load_rankings(path=cfg["paths"]["rankings_path"],
                                                verbosity=verbosity,
                                                subsample=args.subsample)
@@ -41,10 +44,6 @@ def main():
     """
     Add here pipeline steps, e.g. preprocessing, fitting, predictions ...
     """
-
-    # Split data into train test
-    X_train, X_test, y_train, y_test = src.modelling.train_test_split_data(train_data=dataset,
-                                                                           split_size=cfg["modelling"]["split_size"])
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
