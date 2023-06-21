@@ -51,10 +51,11 @@ def main():
 
     # General encodings: One Hot Encode (OHE) subset of features
     X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
-                                                      cols_to_encode=cfg["feature_engineering"]["features_to_ohe"])
+                                                      cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
+                                                      verbosity=verbosity)
     X_test = src.encoding.ohe_encode_test_data(X_test=X_test,
                                                cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
-                                               ohe=ohe)
+                                               ohe=ohe, verbosity=verbosity)
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
