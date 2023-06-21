@@ -12,6 +12,7 @@ import src.utils
 import src.load_datasets
 import src.modelling
 import src.mlflow_registry
+import src.encoding
 
 
 def main():
@@ -31,20 +32,30 @@ def main():
     verbosity = cfg["general"]["verbosity"]
 
     # Load Data
-    dataset = src.load_datasets.load_dataset(path=cfg["paths"]["dataset_path"],
-                                             verbosity=verbosity,
-                                             subsample=args.subsample)
+    X_train, y_train = src.load_datasets.load_train_data(path=cfg["paths"]["train_data_path"],
+                                                         verbosity=verbosity,
+                                                         subsample=args.subsample)
+    X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
+                                              verbosity=verbosity,
+                                              subsample=args.subsample)
+
+    """ COMMENT THIS ONE OUT FOR THIS WEEK
     rankings = src.load_datasets.load_rankings(path=cfg["paths"]["rankings_path"],
                                                verbosity=verbosity,
                                                subsample=args.subsample)
+   """
 
     """
     Add here pipeline steps, e.g. preprocessing, fitting, predictions ...
     """
 
-    # Split data into train test
-    X_train, X_test, y_train, y_test = src.modelling.train_test_split_data(train_data=dataset,
-                                                                           split_size=cfg["modelling"]["split_size"])
+    # General encodings: One Hot Encode (OHE) subset of features
+    X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
+                                                      cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
+                                                      verbosity=verbosity)
+    X_test = src.encoding.ohe_encode_test_data(X_test=X_test,
+                                               cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
+                                               ohe=ohe, verbosity=verbosity)
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
