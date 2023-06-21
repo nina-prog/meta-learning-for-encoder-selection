@@ -12,6 +12,7 @@ import src.utils
 import src.load_datasets
 import src.modelling
 import src.mlflow_registry
+import src.encoding
 
 
 def main():
@@ -37,13 +38,23 @@ def main():
     X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
                                               verbosity=verbosity,
                                               subsample=args.subsample)
+
+    """ COMMENT THIS ONE OUT FOR THIS WEEK
     rankings = src.load_datasets.load_rankings(path=cfg["paths"]["rankings_path"],
                                                verbosity=verbosity,
                                                subsample=args.subsample)
+   """
 
     """
     Add here pipeline steps, e.g. preprocessing, fitting, predictions ...
     """
+
+    # General encodings: One Hot Encode (OHE) subset of features
+    X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
+                                                      cols_to_encode=cfg["feature_engineering"]["features_to_ohe"])
+    X_test = src.encoding.ohe_encode_test_data(X_test=X_test,
+                                               cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
+                                               ohe=ohe)
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
