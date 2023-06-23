@@ -22,7 +22,13 @@ def load_graph(path: Union[Path, str]) -> nx.Graph:
 
     :return: The graph.
     """
-    return nx.read_adjlist(path)
+    G = nx.read_adjlist(path)
+
+    # add node names as labels to the graph
+    node_names = {node: node for node in G.nodes()}
+    nx.set_node_attributes(G, node_names, "label")
+
+    return G
 
 
 def ohe_encode_train_data(X_train: pd.DataFrame, cols_to_encode: list, verbosity=1) -> (pd.DataFrame, OneHotEncoder):
