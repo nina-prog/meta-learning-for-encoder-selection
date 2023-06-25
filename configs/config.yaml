@@ -9,6 +9,10 @@ paths:
     result_path: "data/predictions/regression_targaryen_prediction.csv"
 feature_engineering:
     features_to_ohe: ["model", "tuning", "scoring"]
+    poincare_embedding:
+        dim: 50
+        epochs: 1000
+        explode_dim: True
 modelling:
     model: "Dummy"
     scoring: ["neg_mean_squared_error", "r2"]
