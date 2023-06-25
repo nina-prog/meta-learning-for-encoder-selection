@@ -70,23 +70,22 @@ def poincare_encoding(path_to_graph: str, data=None, column_to_encode=None, enco
     if data is None or column_to_encode is None:
         # Rename columns to dimension_1, dimension_2, ...
         emb_df.columns = [f'dimension_{col}' for col in emb_df.columns]
-        return emb_df
-
-    if verbosity > 0:
-        print(f"Encoding the data feature '{column_to_encode}'...")
-    if explode_dim:
-        # Rename columns to enc_dim_1, enc_dim_2, ...
-        emb_df.columns = [f'enc_dim_{col}' for col in emb_df.columns]
-        # Merge the embeddings with the data
-        encoded_data_df = data.merge(emb_df, left_on=column_to_encode, right_index=True)
-        # Drop the node column
-        encoded_data_df.drop(column_to_encode, axis=1, inplace=True)
+        return emb_df, model
     else:
-        encoded_data_df = data.copy()
-        encoded_data_df[column_to_encode] = encoded_data_df[column_to_encode].apply(
-            lambda x: model.kv.get_vector(str(x)))
-
-    return encoded_data_df, model
+        if verbosity > 0:
+            print(f"Encoding the data feature '{column_to_encode}'...")
+        if explode_dim:
+            # Rename columns to enc_dim_1, enc_dim_2, ...
+            emb_df.columns = [f'enc_dim_{col}' for col in emb_df.columns]
+            # Merge the embeddings with the data
+            encoded_data_df = data.merge(emb_df, left_on=column_to_encode, right_index=True)
+            # Drop the node column
+            encoded_data_df.drop(column_to_encode, axis=1, inplace=True)
+        else:
+            encoded_data_df = data.copy()
+            encoded_data_df[column_to_encode] = encoded_data_df[column_to_encode].apply(
+                lambda x: model.kv.get_vector(str(x)))
+        return encoded_data_df, model
 
 
 def ohe_encode_train_data(X_train: pd.DataFrame, cols_to_encode: list, verbosity=1) -> (pd.DataFrame, OneHotEncoder):
