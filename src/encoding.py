@@ -8,10 +8,8 @@ import numpy as np
 
 from sklearn.preprocessing import OneHotEncoder
 
+from gensim.models.poincare import PoincareModel
 
-# load data
-
-# load graph
 
 def load_graph(path: Union[Path, str]) -> nx.Graph:
     """
@@ -22,7 +20,73 @@ def load_graph(path: Union[Path, str]) -> nx.Graph:
 
     :return: The graph.
     """
-    return nx.read_adjlist(path)
+    G = nx.read_adjlist(path)
+
+    # add node names as labels to the graph
+    node_names = {node: node for node in G.nodes()}
+    nx.set_node_attributes(G, node_names, "label")
+
+    return G
+
+
+def poincare_encoding(path_to_graph: str, data=None, column_to_encode=None, encode_dim=50, epochs=500, seed=7,
+                      explode_dim=True, verbosity=1) -> Union[pd.DataFrame, tuple[pd.DataFrame, PoincareModel]]:
+    """
+    Generates the Poincarè embedding for the given graph and encodes the given column of the given data with it. The
+    encoding can be done in different formats. The function can also be used to just generate the embedding for the
+    given graph. The graph has to be given as an edge list.
+
+    :param path_to_graph: Path to the graph.
+    :type path_to_graph: str
+    :param data: Data to encode.
+    :type data: pandas.DataFrame
+    :param column_to_encode: Column to encode.
+    :type column_to_encode: str
+    :param encode_dim: Dimension of the embedding.
+    :type encode_dim: int
+    :param epochs: Number of epochs to train the model.
+    :type epochs: int
+    :param seed: Seed for the random number generator.
+    :type seed: int
+    :param explode_dim: If True, the embedding is exploded into multiple columns.
+    :type explode_dim: bool
+
+    :return: The encoded data.
+    :rtype: pandas.DataFrame
+    """
+    # load Graph
+    G = load_graph(path_to_graph)
+
+    # Embed the graph
+    if verbosity > 0:
+        print("(Poincare) Embedding the graph...")
+    model = PoincareModel(list(G.edges()), seed=seed, size=encode_dim)
+    model.train(epochs=epochs, print_every=500)
+
+    # Get the embeddings and map them to the node names
+    embeddings_dict = {node: model.kv[node] for node in G.nodes}
+    emb_df = pd.DataFrame.from_dict(embeddings_dict, orient='index')
+
+    if data is None or column_to_encode is None:
+        # Rename columns to dimension_1, dimension_2, ...
+        emb_df.columns = [f'dimension_{col}' for col in emb_df.columns]
+        return emb_df
+
+    if verbosity > 0:
+        print(f"Encoding the data feature '{column_to_encode}'...")
+    if explode_dim:
+        # Rename columns to enc_dim_1, enc_dim_2, ...
+        emb_df.columns = [f'enc_dim_{col}' for col in emb_df.columns]
+        # Merge the embeddings with the data
+        encoded_data_df = data.merge(emb_df, left_on=column_to_encode, right_index=True)
+        # Drop the node column
+        encoded_data_df.drop(column_to_encode, axis=1, inplace=True)
+    else:
+        encoded_data_df = data.copy()
+        encoded_data_df[column_to_encode] = encoded_data_df[column_to_encode].apply(
+            lambda x: model.kv.get_vector(str(x)))
+
+    return encoded_data_df, model
 
 
 def ohe_encode_train_data(X_train: pd.DataFrame, cols_to_encode: list, verbosity=1) -> (pd.DataFrame, OneHotEncoder):

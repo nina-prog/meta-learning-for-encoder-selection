@@ -56,6 +56,22 @@ def main():
     X_test = src.encoding.ohe_encode_test_data(X_test=X_test,
                                                cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
                                                ohe=ohe, verbosity=verbosity)
+    # Encoder encoding: Poincare Embeddings for feature "encoder"
+    X_train, model = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"], data=X_train,
+                                                    column_to_encode="encoder",
+                                                    encode_dim=cfg["feature_engineering"]["poincare_embedding"]["dim"],
+                                                    explode_dim=cfg["feature_engineering"]["poincare_embedding"][
+                                                        "explode_dim"],
+                                                    epochs=cfg["feature_engineering"]["poincare_embedding"]["epochs"],
+                                                    verbosity=verbosity)
+    X_test = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"], data=X_test,
+                                            column_to_encode="encoder",
+                                            encode_dim=cfg["feature_engineering"]["poincare_embedding"]["dim"],
+                                            explode_dim=cfg["feature_engineering"]["poincare_embedding"][
+                                                "explode_dim"],
+                                            epochs=cfg["feature_engineering"]["poincare_embedding"]["epochs"],
+                                            verbosity=verbosity)
+
 
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
