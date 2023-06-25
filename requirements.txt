@@ -31,3 +31,5 @@ shapely==2.0.1
 greenlet==1.1.2
 mlflow==2.3.2
 networkx==2.6.3
+pyvis==0.1.9
+gensim==4.1.2
