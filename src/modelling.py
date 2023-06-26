@@ -100,6 +100,5 @@ def make_prediction(model=None, test_data=None, result_path=None, verbosity=1):
 
     # Make prediction
     predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score"])
-    predictions.index = test_data.index
-    predictions.to_csv(result_path, index=True)
+    predictions.to_csv(result_path, index=False)
     if verbosity > 0: print(f"Saved final prediction in '{result_path}'")
