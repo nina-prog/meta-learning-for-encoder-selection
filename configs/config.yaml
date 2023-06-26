@@ -14,7 +14,7 @@ feature_engineering:
         epochs: 5000
         explode_dim: True
 modelling:
-    model: "RandomForest"
+    model: "XGBoost"
     scoring: ["neg_mean_squared_error", "r2"]
     k_fold: 5
     hyperparam_grid: None

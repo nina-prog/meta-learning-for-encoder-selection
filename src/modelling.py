@@ -1,3 +1,4 @@
+import xgboost
 import pandas as pd
 
 from sklearn.dummy import DummyRegressor
@@ -32,6 +33,7 @@ def train_model(model=None, train_data=None, train_labels=None, scoring=None, hy
         model_collection = {
             "Dummy": DummyRegressor(),
             "RandomForest": RandomForestRegressor(random_state=42),
+            "XGBoost": xgboost.XGBRegressor(random_state=42)
         }
     else:
         model_collection = {
@@ -95,10 +97,13 @@ def make_prediction(model=None, test_data=None, result_path=None, verbosity=1):
     :param result_path: Path to save data
     :param verbosity: Verbosity level
 
-    :return: None
+    :return: y_pred: pd.DataFrame of predicted values
     """
 
     # Make prediction
-    predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score"])
+    predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score_pred"])
     predictions.to_csv(result_path, index=False)
-    if verbosity > 0: print(f"Saved final prediction in '{result_path}'")
+    if verbosity > 0:
+        print(f"Saved final prediction in '{result_path}'")
+
+    return predictions
