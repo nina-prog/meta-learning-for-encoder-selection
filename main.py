@@ -5,6 +5,7 @@ or if you want to run pipeline with subsample of size 100
 python3 main.py --config configs/config.yaml --subsample 100
 """
 import time
+import pandas as pd
 
 import mlflow.sklearn
 
@@ -13,6 +14,7 @@ import src.load_datasets
 import src.modelling
 import src.mlflow_registry
 import src.encoding
+import src.evaluate_regression
 
 
 def main():
@@ -30,19 +32,20 @@ def main():
     verbosity = cfg["general"]["verbosity"]
 
     # Load Data
-    X_train, y_train = src.load_datasets.load_train_data(path=cfg["paths"]["train_data_path"],
-                                                         verbosity=verbosity,
-                                                         subsample=args.subsample)
-    X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
-                                              verbosity=verbosity,
-                                              subsample=args.subsample)
+    #X_train, y_train = src.load_datasets.load_train_data(path=cfg["paths"]["train_data_path"],
+    #                                                     verbosity=verbosity,
+    #                                                     subsample=args.subsample)
+    #X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
+    #                                          verbosity=verbosity,
+    #                                          subsample=args.subsample)
 
-    """ 
-    COMMENT THIS ONE OUT FOR THIS WEEK
-    rankings = src.load_datasets.load_rankings(path=cfg["paths"]["rankings_path"],
-                                               verbosity=verbosity,
-                                               subsample=args.subsample)
-    """
+    factors = ["dataset", "model", "tuning", "scoring"]
+    new_index = "encoder"
+    target = "cv_score"
+
+    df_train = src.load_datasets.load_dataset(path=cfg["paths"]["train_data_path"])
+    X_train, X_test, y_train, y_test = src.evaluate_regression.custom_train_test_split(df_train, factors, target)
+    X_test_original = X_test.copy()
 
     # General encodings: One Hot Encode (OHE) subset of features
     X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
@@ -74,6 +77,10 @@ def main():
                                                                 "epochs"],
                                                             verbosity=verbosity)
 
+    X_train.to_csv("data/preprocessed/X_train.csv", index=False)
+    X_test.to_csv("data/preprocessed/X_test.csv", index=False)
+    y_train.to_csv("data/preprocessed/y_train.csv", index=False)
+
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
     with mlflow.start_run(tags=src.mlflow_registry.get_mlflow_tags(X_train, cfg)) as run:
@@ -88,9 +95,22 @@ def main():
         # Log additional information to mlflow run
         src.mlflow_registry.log_model_eval(cv_result, cfg, cfg_path, run, verbosity)
 
-    # Make final predictions on test data
-    src.modelling.make_prediction(model=model, test_data=X_test,
-                                  result_path=cfg["paths"]["result_path"], verbosity=verbosity)
+        # Make final predictions on test data
+        y_pred = src.modelling.make_prediction(model=model, test_data=X_test,
+                                               result_path=cfg["paths"]["result_path"], verbosity=verbosity)
+
+        # Concat to df_pred for spearman evaluation
+        df_pred = pd.concat([X_test_original, y_test, y_pred], axis=1)
+        df_pred.to_csv("data/preprocessed/df_pred.csv", index=False)
+
+        rankings_test = src.evaluate_regression.get_rankings(df_pred, factors=factors,
+                                                             new_index=new_index, target="cv_score")
+        rankings_pred = src.evaluate_regression.get_rankings(df_pred, factors=factors,
+                                                             new_index=new_index, target="cv_score_pred")
+        # Get Average Spearman, print and log it
+        avg_spearman = src.evaluate_regression.average_spearman(rankings_test, rankings_pred)
+        print(f"Average Spearman: {avg_spearman:.4f}")
+        mlflow.log_metric(key="average_spearman", value=avg_spearman)
 
     # Track time for total runtime and display end of pipeline
     runtime = time.time() - start_time
