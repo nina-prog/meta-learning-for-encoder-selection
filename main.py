@@ -13,6 +13,7 @@ import src.load_datasets
 import src.modelling
 import src.mlflow_registry
 import src.encoding
+from src.meta_information import add_dataset_meta_information
 
 
 def main():
@@ -73,7 +74,18 @@ def main():
                                                             epochs=cfg["feature_engineering"]["poincare_embedding"][
                                                                 "epochs"],
                                                             verbosity=verbosity)
-
+    
+    # Add dataset_agg (= csv-file containing meta information about the datasets)
+    # The file can be created with the notebook from week 09
+    X_train = add_dataset_meta_information(df=X_train, 
+                                           path_to_meta_df=cfg["paths"]["dataset_meta_information_path"], 
+                                           nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"], 
+                                           replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"])
+    X_test = add_dataset_meta_information(df=X_test, 
+                                           path_to_meta_df=cfg["paths"]["dataset_meta_information_path"], 
+                                           nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"], 
+                                           replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"])
+    
     # Log model evaluation to mlflow registry
     mlflow.sklearn.autolog(log_models=False)
     with mlflow.start_run(tags=src.mlflow_registry.get_mlflow_tags(X_train, cfg)) as run:
