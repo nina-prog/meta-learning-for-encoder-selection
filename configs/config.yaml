@@ -7,12 +7,16 @@ paths:
     train_data_path: "data/raw/dataset_train.csv"
     test_values_path: "data/raw/X_test.csv"
     result_path: "data/predictions/regression_targaryen_prediction.csv"
+    dataset_meta_information_path: "data/preprocessed/dataset_agg.csv"
 feature_engineering:
     features_to_ohe: ["model", "tuning", "scoring"]
     poincare_embedding:
         dim: 50
         epochs: 5000
         explode_dim: True
+    dataset_meta_information:
+        nan_threshold: 0.4
+        replacing_strategy: "median"
 modelling:
     model: "RandomForest"
     scoring: ["neg_mean_squared_error", "r2"]
