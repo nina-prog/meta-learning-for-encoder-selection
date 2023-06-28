@@ -15,7 +15,10 @@ import src.modelling
 import src.mlflow_registry
 import src.encoding
 import src.evaluate_regression
+
+from src.feature_engineering import normalize_train_data, normalize_test_data
 from src.meta_information import add_dataset_meta_information
+
 
 def main():
     """
@@ -89,21 +92,27 @@ def main():
                                                explode_dim=cfg["feature_engineering"]["poincare_embedding"][
                                                    "explode_dim"],
                                                verbosity=verbosity)
-    
+
     # Add dataset_agg (= csv-file containing meta information about the datasets)
     # The file can be created with the notebook from week 09
-    X_train = add_dataset_meta_information(df=X_train, 
-                                           path_to_meta_df=cfg["paths"]["dataset_meta_information_path"], 
+    X_train = add_dataset_meta_information(df=X_train,
+                                           path_to_meta_df=cfg["paths"]["dataset_meta_information_path"],
                                            nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"],
                                            replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"]["replacing_strategy"])
-    X_val = add_dataset_meta_information(df=X_val, 
+    X_val = add_dataset_meta_information(df=X_val,
                                          path_to_meta_df=cfg["paths"]["dataset_meta_information_path"],
                                          nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"],
                                          replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"]["replacing_strategy"])
-    X_test = add_dataset_meta_information(df=X_test, 
-                                          path_to_meta_df=cfg["paths"]["dataset_meta_information_path"], 
-                                          nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"], 
+    X_test = add_dataset_meta_information(df=X_test,
+                                          path_to_meta_df=cfg["paths"]["dataset_meta_information_path"],
+                                          nan_threshold=cfg["feature_engineering"]["dataset_meta_information"]["nan_threshold"],
                                           replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"]["replacing_strategy"])
+
+    ### NORMALIZATION ###
+    X_train, scaler = normalize_train_data(X_train=X_train, method=cfg["feature_engineering"]["normalize"]["method"],
+                                           verbosity=verbosity)
+    X_val = normalize_test_data(X_test=X_val, scaler=scaler, verbosity=verbosity)
+    X_test = normalize_test_data(X_test=X_test, scaler=scaler, verbosity=verbosity)
 
     ### MODELLING ###
     # Log model evaluation to mlflow registry
@@ -123,17 +132,17 @@ def main():
 
         ### PREDICTIONS ###
         # Make final predictions on test data and validation data
-        y_pred_test = src.modelling.make_prediction(model=model, test_data=X_test,
-                                                    result_path=cfg["paths"]["result_path"], save_data=True,
-                                                    verbosity=verbosity)
         y_pred_val = src.modelling.make_prediction(model=model, test_data=X_val,
                                                    result_path=cfg["paths"]["result_path"], save_data=False,
                                                    verbosity=verbosity)
 
+        y_pred_test = src.modelling.make_prediction(model=model, test_data=X_test,
+                                                    result_path=cfg["paths"]["result_path"], save_data=True,
+                                                    verbosity=verbosity)
+
         ### RANKINGS ###
         # Concat to df_pred for spearman evaluation
         df_pred = pd.concat([X_val_original, y_val, y_pred_val], axis=1)
-        df_pred.to_csv("data/predictions/df_pred.csv", index=False)
         rankings_test = src.evaluate_regression.get_rankings(df_pred, factors=FACTORS,
                                                              new_index=NEW_INDEX, target="cv_score")
         rankings_pred = src.evaluate_regression.get_rankings(df_pred, factors=FACTORS,
