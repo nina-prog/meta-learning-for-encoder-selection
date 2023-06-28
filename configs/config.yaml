@@ -18,7 +18,7 @@ feature_engineering:
         nan_threshold: 0.4
         replacing_strategy: "median"
 modelling:
-    model: "XGBoost"
+    model: "RandomForest"
     scoring: ["neg_mean_squared_error", "r2"]
     k_fold: 5
     hyperparam_grid: None
