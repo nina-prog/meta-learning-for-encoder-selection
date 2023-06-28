@@ -1,5 +1,5 @@
 general:
-    verbosity: 2
+    verbosity: 1
 paths:
     dataset_path: "data/raw/dataset.csv"
     rankings_path: "data/raw/rankings.csv"
@@ -13,7 +13,7 @@ feature_engineering:
     features_to_ohe: ["model", "tuning", "scoring"]
     poincare_embedding:
         dim: 50
-        epochs: 5000
+        epochs: 3000
         explode_dim: True
         dim_reduction: None
     dataset_meta_information:
