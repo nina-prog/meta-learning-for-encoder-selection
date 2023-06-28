@@ -1,5 +1,5 @@
 general:
-    verbosity: 1
+    verbosity: 2
 paths:
     dataset_path: "data/raw/dataset.csv"
     rankings_path: "data/raw/rankings.csv"
