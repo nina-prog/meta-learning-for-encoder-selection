@@ -1,12 +1,13 @@
+import xgboost
 import pandas as pd
 
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_validate
-from sklearn.model_selection import train_test_split
 
 
-def train_model(model=None, train_data=None, train_labels=None, scoring=None, hyperparam_grid=None, verbosity=1, k_fold=5):
+def train_model(model=None, train_data=None, train_labels=None,
+                scoring=None, hyperparam_grid=None, verbosity=1, k_fold=5, indices=None):
     """
     Function to perform cross validation and fit the final estimator.
     First selects the model based on the model: str parameter (e.g. "Dummy") and whether a hyperparam_grid is provided.
@@ -20,6 +21,7 @@ def train_model(model=None, train_data=None, train_labels=None, scoring=None, hy
     :param hyperparam_grid: Dict of hyperparameters
     :param verbosity: Verbosity level, e.g. 1
     :param k_fold: Number of k_folds for CV, e.g. 5
+    :param indices: Indices for custom CV returned from custom_cross_validated_indices() function
 
     :return: Fitted estimator and cv_results
     """
@@ -32,6 +34,7 @@ def train_model(model=None, train_data=None, train_labels=None, scoring=None, hy
         model_collection = {
             "Dummy": DummyRegressor(),
             "RandomForest": RandomForestRegressor(random_state=42),
+            "XGBoost": xgboost.XGBRegressor(random_state=42)
         }
     else:
         model_collection = {
@@ -48,7 +51,7 @@ def train_model(model=None, train_data=None, train_labels=None, scoring=None, hy
     # Perform CV
     if verbosity > 0: print(f"Performing CV with {k_fold} folds ...")
     cv_results = cross_validate(estimator=model, X=train_data, y=train_labels,
-                                cv=k_fold, scoring=scoring, n_jobs=-1, return_train_score=True)
+                                cv=indices, scoring=scoring, n_jobs=-1, return_train_score=True)
 
     # Fit final model on all train data
     if verbosity > 0: print(f"Fitting final model ({model_string}) ...")
@@ -67,38 +70,26 @@ def train_model(model=None, train_data=None, train_labels=None, scoring=None, hy
     return model, cv_results
 
 
-# TODO: Function will be deprecated as soon as we the get train test data from our supervisor
-def train_test_split_data(train_data, split_size=0.2):
-    """
-    Splits the overall data into train and test sets with fraction split_size.
-    :param train_data: X_train
-    :param train_labels: y_train
-    :param split_size: Fraction of split_size
-
-    :return: X_train, X_test, y_train, y_test
-    """
-
-    # Split data into features and target
-    train_values = train_data.drop("cv_score", axis=1)
-    train_labels = train_data["cv_score"]
-
-    X_train, X_test, y_train, y_test = train_test_split(train_values, train_labels,
-                                                        test_size = split_size, random_state = 42)
-    return X_train, X_test, y_train, y_test
-
-
-def make_prediction(model=None, test_data=None, result_path=None, verbosity=1):
+def make_prediction(model=None, test_data=None, result_path=None, save_data=True, verbosity=1):
     """
     Makes the prediction based on the input model and the test data.
     :param model: Fitted model
     :param test_data: Test data
     :param result_path: Path to save data
+    :param save_data: bool -- Whether to save data in result_path or not
     :param verbosity: Verbosity level
 
-    :return: None
+    :return: y_pred: pd.DataFrame of predicted values
     """
 
-    # Make prediction
-    predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score"])
-    predictions.to_csv(result_path, index=False)
-    if verbosity > 0: print(f"Saved final prediction in '{result_path}'")
+    # Make prediction and adjust index
+    predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score_pred"])
+    predictions.index = test_data.index
+
+    # Save prediction and print information if save_data parm is True
+    if save_data:
+        predictions.to_csv(result_path, index=False)
+        if verbosity > 0:
+            print(f"Saved final prediction in '{result_path}'")
+
+    return predictions
