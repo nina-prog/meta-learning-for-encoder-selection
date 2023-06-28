@@ -14,6 +14,7 @@ from src.load_datasets import load_dataset
 
 factors = ["dataset", "model", "tuning", "scoring"]
 new_index = "encoder"
+target = "cv_score"
 
 # ---- load data...
 DATA_DIR = Path(".\data")
@@ -29,10 +30,17 @@ y_test = df_test["cv_score"]
 # df_train = load_dataset(DATA_DIR / "dataset_train.csv")
 # X_train, X_test, y_train, y_test = custom_train_test_split(df, factors, target)
 
-# ---- predict
+# ---- predict ...
 dummy_pipe = Pipeline([("encoder", OneHotEncoder()), ("model", DecisionTreeRegressor())])
 y_pred = pd.Series(dummy_pipe.fit(X_train, y_train).predict(X_test), index=y_test.index, name="cv_score_pred")
 df_pred = pd.concat([X_test, y_test, y_pred], axis=1)
+
+# ---- ... or tune
+dummy_pipe = Pipeline([("encoder", OneHotEncoder()), ("model", DecisionTreeRegressor())])
+indices = er.custom_cross_validated_indices(df_train, factors, target, n_splits=5, shuffle=True, random_state=1444)
+
+gs = GridSearchCV(dummy_pipe, {"model__max_depth": [2, 5, None]}, cv=indices).fit(X_train, y_train)
+print(gs.best_params_)
 
 # ---- convert to rankings and evaluate
 rankings_test = get_rankings(df_pred, factors=factors, new_index=new_index, target="cv_score")
@@ -45,8 +53,8 @@ import pandas as pd
 import warnings
 
 from scipy.stats import ConstantInputWarning, spearmanr
-from sklearn.model_selection import train_test_split
-from typing import Iterable
+from sklearn.model_selection import train_test_split, KFold
+from typing import Iterable, List
 
 
 def custom_train_test_split(df: pd.DataFrame, factors, target, train_size=0.75, shuffle=True, random_state=0):
@@ -67,6 +75,20 @@ def custom_train_test_split(df: pd.DataFrame, factors, target, train_size=0.75, 
     y_test = df_test[target]
 
     return X_train, X_test, y_train, y_test
+
+
+def custom_cross_validated_indices(df: pd.DataFrame, factors: Iterable[str], target: str,
+                                   **kfoldargs) -> List[List[Iterable[int]]]:
+    df_factors = df.groupby(factors)[target].mean().reset_index()
+    X_factors, y_factors = df_factors.drop(target, axis=1), df_factors[target]
+
+    indices = []
+    for itr, ite in KFold(**kfoldargs).split(X_factors, y_factors):
+        tr = pd.merge(X_factors.iloc[itr], df.reset_index(), on=factors).index  # "index" is the index of df
+        te = pd.merge(X_factors.iloc[ite], df.reset_index(), on=factors).index  # "index" is the index of df
+        indices.append([tr, te])
+
+    return indices
 
 
 def score2ranking(score: pd.Series, ascending=True):
