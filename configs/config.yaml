@@ -19,6 +19,8 @@ feature_engineering:
     dataset_meta_information:
         nan_threshold: 0.4
         replacing_strategy: "median"
+    normalize:
+        method: "minmax"
 modelling:
     model: "RandomForest"
     scoring: ["neg_mean_squared_error", "r2"]
