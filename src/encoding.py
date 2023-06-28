@@ -78,7 +78,7 @@ def poincare_encoding(path_to_graph: str, data=None, column_to_encode=None, enco
             # Rename columns to enc_dim_1, enc_dim_2, ...
             emb_df.columns = [f'enc_dim_{col}' for col in emb_df.columns]
             # Merge the embeddings with the data
-            encoded_data_df = data.merge(emb_df, left_on=column_to_encode, right_index=True)
+            encoded_data_df = data.merge(emb_df, left_on=column_to_encode, right_index=True, how='left')
             # Drop the node column
             encoded_data_df.drop(column_to_encode, axis=1, inplace=True)
         else:
