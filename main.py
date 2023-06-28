@@ -65,35 +65,29 @@ def main():
                                                ohe=ohe, verbosity=verbosity)
 
     # Encoder encoding: Poincare Embeddings for feature "encoder"
-    X_train, poincare_model = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"], data=X_train,
-                                                             column_to_encode="encoder",
-                                                             encode_dim=
-                                                             cfg["feature_engineering"]["poincare_embedding"]["dim"],
-                                                             explode_dim=
-                                                             cfg["feature_engineering"]["poincare_embedding"][
-                                                                 "explode_dim"],
-                                                             epochs=cfg["feature_engineering"]["poincare_embedding"][
-                                                                 "epochs"],
-                                                             verbosity=verbosity)
-    X_val, _ = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"], data=X_val,
+    X_train, _ = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"],
+                                                path_to_embeddings=cfg["paths"]["embeddings_path"],
+                                                data=X_train,
+                                                column_to_encode="encoder",
+                                                encode_dim=cfg["feature_engineering"]["poincare_embedding"]["dim"],
+                                                explode_dim=cfg["feature_engineering"]["poincare_embedding"][
+                                                    "explode_dim"],
+                                                epochs=cfg["feature_engineering"]["poincare_embedding"][
+                                                    "epochs"],
+                                                dim_reduction=cfg["feature_engineering"]["poincare_embedding"][
+                                                    "dim_reduction"],
+                                                verbosity=verbosity)
+    X_val, _ = src.encoding.poincare_encoding(path_to_embeddings=cfg["paths"]["embeddings_path"],
+                                              data=X_val,
                                               column_to_encode="encoder",
-                                              encode_dim=cfg["feature_engineering"]["poincare_embedding"][
-                                                  "dim"],
-                                              explode_dim=
-                                              cfg["feature_engineering"]["poincare_embedding"][
+                                              explode_dim=cfg["feature_engineering"]["poincare_embedding"][
                                                   "explode_dim"],
-                                              epochs=cfg["feature_engineering"]["poincare_embedding"][
-                                                  "epochs"],
                                               verbosity=verbosity)
-    X_test, _ = src.encoding.poincare_encoding(path_to_graph=cfg["paths"]["graph_path"], data=X_test,
+    X_test, _ = src.encoding.poincare_encoding(path_to_embeddings=cfg["paths"]["embeddings_path"],
+                                               data=X_test,
                                                column_to_encode="encoder",
-                                               encode_dim=cfg["feature_engineering"]["poincare_embedding"][
-                                                   "dim"],
-                                               explode_dim=
-                                               cfg["feature_engineering"]["poincare_embedding"][
+                                               explode_dim=cfg["feature_engineering"]["poincare_embedding"][
                                                    "explode_dim"],
-                                               epochs=cfg["feature_engineering"]["poincare_embedding"][
-                                                   "epochs"],
                                                verbosity=verbosity)
 
     ### MODELLING ###
