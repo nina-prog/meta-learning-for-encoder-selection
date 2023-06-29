@@ -122,7 +122,6 @@ def main():
         model, cv_result = src.modelling.train_model(model=cfg["modelling"]["model"],
                                                      train_data=X_train,
                                                      train_labels=y_train,
-                                                     scoring=cfg["modelling"]["scoring"],
                                                      hyperparam_grid=None,
                                                      verbosity=verbosity,
                                                      k_fold=cfg["modelling"]["k_fold"],

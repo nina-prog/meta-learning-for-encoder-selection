@@ -5,9 +5,12 @@ from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_validate
 
+from sklearn.metrics import make_scorer, mean_squared_error, r2_score
+from src.evaluate_regression import custom_spearmanr_scorer
 
-def train_model(model=None, train_data=None, train_labels=None,
-                scoring=None, hyperparam_grid=None, verbosity=1, k_fold=5, indices=None):
+
+def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=None, verbosity=1, k_fold=5,
+                indices=None):
     """
     Function to perform cross validation and fit the final estimator.
     First selects the model based on the model: str parameter (e.g. "Dummy") and whether a hyperparam_grid is provided.
@@ -50,6 +53,11 @@ def train_model(model=None, train_data=None, train_labels=None,
 
     # Perform CV
     if verbosity > 0: print(f"Performing CV with {k_fold} folds ...")
+    scoring = {
+        'spearman': custom_spearmanr_scorer,
+        'neg_mean_squared_error': make_scorer(mean_squared_error, greater_is_better=False),
+        'r2': make_scorer(r2_score)
+    }
     cv_results = cross_validate(estimator=model, X=train_data, y=train_labels,
                                 cv=indices, scoring=scoring, n_jobs=-1, return_train_score=True)
 

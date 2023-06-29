@@ -91,6 +91,31 @@ def custom_cross_validated_indices(df: pd.DataFrame, factors: Iterable[str], tar
     return indices
 
 
+def custom_spearmanr_scorer(clf, X, y, **kwargs):
+    # Predict
+    y_pred = pd.Series(clf.predict(X), index=y.index, name=str(y.name) + "_pred")
+    df_pred = pd.concat([X, y, y_pred], axis=1)
+    # Map embeddings to encoder names for new index
+    ## Load embeddings
+    emb_df = pd.read_csv("data/preprocessed/embeddings.csv", index_col=0)
+    ## Rename
+    emb_df = emb_df.rename(columns={col: f"enc_dim_{col}" for col in emb_df.columns})
+    emb_df = emb_df.reset_index()
+    emb_df = emb_df.rename(columns={"index": "encoder"})
+    ## Get all columns that start with enc_dim
+    enc_dim_cols = [col for col in emb_df.columns if col.startswith("enc_dim")]
+    ## Merge embeddings with df_pred
+    df_pred = df_pred.merge(emb_df, on=enc_dim_cols, how="left")
+    print(df_pred.head(10))
+    # Convert to rankings
+    NEW_INDEX = "encoder"
+    FACTORS = [c for c in X.columns if c not in [NEW_INDEX, str(y.name)]]
+    rankings_test = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name))
+    rankings_pred = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name) + "_pred")
+    # Evaluate
+    return average_spearman(rankings_test, rankings_pred)
+
+
 def score2ranking(score: pd.Series, ascending=True):
     """
     Ascending =
