@@ -53,5 +53,8 @@ def add_dataset_meta_information(df=None, path_to_meta_df=None, nan_threshold=0.
     # Merge datasets
     dataset_agg_filtered = dataset_agg_filtered.rename(columns={"dataset_id": "dataset"})
     merged_df = df.merge(dataset_agg_filtered, how="left", on=["dataset"])
-    
+
+    # Drop the dataset column
+    merged_df = merged_df.drop(["dataset"], axis=1)
+
     return merged_df
