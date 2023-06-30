@@ -122,24 +122,14 @@ def custom_spearmanr_scorer(clf, X, y, **kwargs):
     df_pred = df_pred.round(dict_to_round)
 
     # Merge dataframes based on enc_dim_*
-    #print(f"ENC_DIM_COLS: {enc_dim_cols}")
-    #print(f"PRED COLS   : {list(df_pred.columns)}")
-    #print(f"EMB COLS    : {list(df_emb_round.columns)}")
     df_pred = df_pred.merge(df_emb_round, on=enc_dim_cols, how="left")
-    
-    print(f"\nNAN VALUES OF df_pred: {df_pred.isna().any().sum()}")
     
     # Convert to rankings
     NEW_INDEX = "encoder"
-    FACTORS = [c for c in df_pred.columns if c not in [NEW_INDEX, str(y.name)]]
     
-    #dict_to_round = dict.fromkeys(FACTORS, 7)
-    #df_pred = df_pred.round(dict_to_round)
-    
-    ##### Try reversing the encodings
+    # Reversing the OHE encodings
     
     def revert_scoring_ohe(row):
-        # ToDo: Assertions
         tuning = "Cannot reconstruct"
         if row["scoring_ACC"] == 1:
             tuning = "ACC"
@@ -150,7 +140,6 @@ def custom_spearmanr_scorer(clf, X, y, **kwargs):
         return tuning
 
     def revert_tuning_ohe(row):
-        # ToDo: Assertions
         tuning = "Cannot reconstruct"
         if row["tuning_full"] == 1:
             tuning = "full"
@@ -161,7 +150,6 @@ def custom_spearmanr_scorer(clf, X, y, **kwargs):
         return tuning
 
     def revert_model_ohe(row):
-        # ToDo: Assertions
         model = "Cannot reconstruct"
         if row["model_DTC"] == 1:
             model = "DTC"
@@ -182,22 +170,10 @@ def custom_spearmanr_scorer(clf, X, y, **kwargs):
     df_pred = df_pred[["model", "tuning", "scoring", "encoder", "dataset", "cv_score", "cv_score_pred"]]
     FACTORS = ["dataset", "model", "tuning", "scoring"]
     
-    ##### End Try reversing the encodings
+    # Reversing the OHE encodings
     
     rankings_test = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name))
     rankings_pred = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name) + "_pred")
-    
-    print(f"\nNAN VALUES OF rankings_test: {rankings_test.isna().any().sum()}")
-    print(f"{rankings_test.shape}")
-    # Groups are too big
-    #print(f"all columns: {rankings_test.columns}")
-    #print(f"columns with nan values: {rankings_test.columns[rankings_test.isna().any()].tolist()}")
-    #print(f"{rankings_test.isna().sum()}")
-    print(f"\nNAN VALUES OF rankings_pred: {rankings_pred.isna().any().sum()}")
-    print(f"{rankings_pred.shape}")
-    #print(f"all columns: {rankings_pred.columns}")
-    #print(f"columns with nan values: {rankings_pred.columns[rankings_pred.isna().any()].tolist()}")
-    #print(f"{rankings_pred.isna().sum()}")
     
     # Evaluate
     return average_spearman(rankings_test, rankings_pred)
