@@ -78,7 +78,7 @@ def poincare_encoding(path_to_embeddings: str, path_to_graph: str = None, data=N
         # Embed the graph
         if verbosity > 0:
             print("(Poincare) Embedding the graph ...")
-        model = PoincareModel(list(G.edges()), seed=seed, size=encode_dim)
+        model = PoincareModel(list(G.edges()), seed=seed, size=encode_dim, dtype=np.float32)
         model.train(epochs=epochs, print_every=500)
         # Get the embeddings and map them to the node names
         embeddings_dict = {node: model.kv[node] for node in G.nodes}
