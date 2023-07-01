@@ -54,6 +54,7 @@ import warnings
 
 from scipy.stats import ConstantInputWarning, spearmanr
 from sklearn.model_selection import train_test_split, KFold
+from sklearn.preprocessing import MinMaxScaler
 from typing import Iterable, List
 
 
@@ -89,6 +90,93 @@ def custom_cross_validated_indices(df: pd.DataFrame, factors: Iterable[str], tar
         indices.append([tr, te])
 
     return indices
+
+
+def custom_spearmanr_scorer(clf, X, y, **kwargs):
+    # Load embeddings 
+    emb_df = pd.read_csv("data/preprocessed/embeddings.csv", index_col=0)
+    
+    # Define unique encoders 
+    unique_encoders = ['BE', 'BUCV10RGLMME', 'BUCV10TE', 'BUCV2RGLMME', 'BUCV2TE', 'BUCV5RGLMME', 'BUCV5TE', 'CBE', 'CE', 'CV10RGLMME', 'CV10TE', 'CV2RGLMME', 'CV2TE', 'CV5RGLMME', 'CV5TE', 'DE', 'DTEM10', 'DTEM2', 'DTEM5', 'ME01E', 'ME10E', 'ME1E', 'MHE', 'OE', 'OHE', 'PBTE0001', 'PBTE001', 'PBTE01', 'RGLMME', 'SE', 'TE', 'WOEE']
+
+    # Predict
+    y_pred = pd.Series(clf.predict(X), index=y.index, name=str(y.name) + "_pred")
+    df_pred = pd.concat([X, y, y_pred], axis=1)
+
+    # Scale embeddings and rename columns
+    col_list = list(emb_df.columns)
+    scaler = MinMaxScaler()
+    df_emb_scaled = scaler.fit_transform(emb_df[col_list])
+    df_emb_scaled = pd.DataFrame(df_emb_scaled, columns=col_list, index=emb_df.index)
+    df_emb_scaled = df_emb_scaled.rename(columns={col: f"enc_dim_{col}" for col in emb_df.columns})
+    df_emb_scaled = df_emb_scaled.reset_index()
+    df_emb_scaled = df_emb_scaled.rename(columns={"index": "encoder"})
+    
+    # Filter for the encoders (and leave other vertices from the graph out)
+    df_emb_scaled = df_emb_scaled[df_emb_scaled.encoder.isin(unique_encoders)]
+
+    # Round values 
+    enc_dim_cols = [col for col in df_emb_scaled.columns if col.startswith("enc_dim")]
+    dict_to_round = dict.fromkeys(enc_dim_cols, 7)
+    df_emb_round = df_emb_scaled.round(dict_to_round)
+    df_pred = df_pred.round(dict_to_round)
+
+    # Merge dataframes based on enc_dim_*
+    df_pred = df_pred.merge(df_emb_round, on=enc_dim_cols, how="left")
+    
+    # Convert to rankings
+    NEW_INDEX = "encoder"
+    
+    # Reversing the OHE encodings
+    
+    def revert_scoring_ohe(row):
+        tuning = "Cannot reconstruct"
+        if row["scoring_ACC"] == 1:
+            tuning = "ACC"
+        elif row["scoring_AUC"] == 1:
+            tuning = "AUC"
+        elif row["scoring_F1"] == 1:
+            tuning = "F1"
+        return tuning
+
+    def revert_tuning_ohe(row):
+        tuning = "Cannot reconstruct"
+        if row["tuning_full"] == 1:
+            tuning = "full"
+        elif row["tuning_model"] == 1:
+            tuning = "model"
+        elif row["tuning_no"] == 1:
+            tuning = "no"
+        return tuning
+
+    def revert_model_ohe(row):
+        model = "Cannot reconstruct"
+        if row["model_DTC"] == 1:
+            model = "DTC"
+        elif row["model_KNC"] == 1:
+            model = "KNC"
+        elif row["model_LGBMC"] == 1:
+            model = "LGBMC"
+        elif row["model_LR"] == 1:
+            model = "LR"
+        elif row["model_SVC"] == 1:
+            model = "SVC"
+        return model 
+
+    df_pred["model"] = df_pred.apply(revert_model_ohe, axis=1)
+    df_pred["tuning"] = df_pred.apply(revert_tuning_ohe, axis=1)
+    df_pred["scoring"] = df_pred.apply(revert_scoring_ohe, axis=1)
+    
+    df_pred = df_pred[["model", "tuning", "scoring", "encoder", "dataset", "cv_score", "cv_score_pred"]]
+    FACTORS = ["dataset", "model", "tuning", "scoring"]
+    
+    # Reversing the OHE encodings
+    
+    rankings_test = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name))
+    rankings_pred = get_rankings(df_pred, factors=FACTORS, new_index=NEW_INDEX, target=str(y.name) + "_pred")
+    
+    # Evaluate
+    return average_spearman(rankings_test, rankings_pred)
 
 
 def score2ranking(score: pd.Series, ascending=True):
@@ -132,6 +220,8 @@ def list_spearman(rf1: pd.DataFrame, rf2: pd.DataFrame) -> np.array:
 
 
 def average_spearman(rf1: pd.DataFrame, rf2: pd.DataFrame) -> np.array:
+    #with warnings.catch_warnings():
+    #    warnings.filterwarnings("ignore", category=RuntimeWarning)
     return np.nanmean(list_spearman(rf1, rf2))
 
 

@@ -7,7 +7,7 @@ from typing import Union
 def load_dataset(path: Union[Path, str], verbosity=1, subsample=None) -> pd.DataFrame:
     if verbosity > 0: print("Loading data ...")
     # Read dataframe
-    df = pd.read_csv(path, index_col=0)
+    df = pd.read_csv(path, index_col=None)
 
     # Take subsample, if provided in the args
     if subsample is not None:
