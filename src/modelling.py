@@ -6,8 +6,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-import lightgbm as lgb
-import catboost
+#import lightgbm as lgb
+#import catboost
 
 
 from sklearn.metrics import make_scorer, mean_squared_error, r2_score
@@ -42,10 +42,10 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
         model_collection = {
             "Dummy": DummyRegressor(),
             "DecisionTree": DecisionTreeRegressor(random_state=42),
-            "RandomForest": RandomForestRegressor(random_state=42),
+            "RandomForest": RandomForestRegressor(random_state=42, n_jobs=-1),
             "XGBoost": xgboost.XGBRegressor(random_state=42),
-            "LGBM": lgb.LGBMRegressor(random_state=42),
-            "CatBoost": catboost.CatBoostRegressor(random_state=42),
+            #"LGBM": lgb.LGBMRegressor(random_state=42),
+            #"CatBoost": catboost.CatBoostRegressor(random_state=42),
             "LinearRegression": LinearRegression()
         }
     else:
