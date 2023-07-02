@@ -33,3 +33,5 @@ mlflow==2.3.2
 networkx==2.6.3
 pyvis==0.1.9
 gensim==4.1.2
+lightgbm==3.3.5
+catboost==1.2
