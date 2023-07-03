@@ -167,7 +167,7 @@ def custom_spearmanr_scorer(clf, X, y, **kwargs):
     df_pred["tuning"] = df_pred.apply(revert_tuning_ohe, axis=1)
     df_pred["scoring"] = df_pred.apply(revert_scoring_ohe, axis=1)
     
-    df_pred = df_pred[["model", "tuning", "scoring", "encoder", "dataset", "cv_score", "cv_score_pred"]]
+    df_pred = df_pred[["model", "tuning", "scoring", "encoder", "dataset", "rank", "rank_pred"]]
     FACTORS = ["dataset", "model", "tuning", "scoring"]
     
     # Reversing the OHE encodings
