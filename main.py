@@ -146,7 +146,7 @@ def main():
                                                      k_fold=cfg["modelling"]["k_fold"],
                                                      indices=indices)
         # Log additional information to mlflow run
-        #src.mlflow_registry.log_model_eval(cv_result, cfg, cfg_path, run, verbosity)
+        src.mlflow_registry.log_model_eval(cv_result, cfg_path, run, verbosity)
 
         ### PREDICTIONS ###
         # Make final predictions on test data and validation data
