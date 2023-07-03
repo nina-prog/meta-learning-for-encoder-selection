@@ -87,20 +87,21 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
     return model, cv_results
 
 
-def make_prediction(model=None, test_data=None, result_path=None, save_data=True, verbosity=1):
+def make_prediction(model=None, test_data=None, result_path=None, save_data=True, target=None, verbosity=1):
     """
     Makes the prediction based on the input model and the test data.
     :param model: Fitted model
     :param test_data: Test data
     :param result_path: Path to save data
     :param save_data: bool -- Whether to save data in result_path or not
+    :param target: str -- String of target column
     :param verbosity: Verbosity level
 
     :return: y_pred: pd.DataFrame of predicted values
     """
 
     # Make prediction and adjust index
-    predictions = pd.DataFrame(model.predict(test_data), columns=["cv_score_pred"])
+    predictions = pd.DataFrame(model.predict(test_data), columns=[target + "_pred"])
     predictions.index = test_data.index
 
     # Save prediction and print information if save_data parm is True
