@@ -5,6 +5,7 @@ paths:
     rankings_path: "data/raw/rankings.csv"
     graph_path: "data/raw/graph.adjlist"
     train_data_path: "data/raw/dataset_train.csv"
+    train_rank_data_path: "data/raw/dataset_rank_train.csv"
     test_values_path: "data/raw/X_test.csv"
     result_path: "data/predictions/regression_targaryen_prediction.csv"
     dataset_meta_information_path: "data/preprocessed/dataset_agg.csv"
@@ -23,7 +24,6 @@ feature_engineering:
         method: "minmax"
 modelling:
     model: "RandomForest"
-    scoring: ["neg_mean_squared_error", "r2"]
     k_fold: 5
     hyperparam_grid: None
     split_size: 0.2
