@@ -5,7 +5,8 @@ from typing import Union
 
 
 def load_dataset(path: Union[Path, str], verbosity=1, subsample=None) -> pd.DataFrame:
-    if verbosity > 0: print("Loading data ...")
+    if verbosity > 0:
+        print(f"Loading data from '{path}' ...")
     # Read dataframe
     df = pd.read_csv(path, index_col=None)
 
@@ -18,7 +19,8 @@ def load_dataset(path: Union[Path, str], verbosity=1, subsample=None) -> pd.Data
 
 
 def load_rankings(path: Union[Path, str], verbosity=1, subsample=None) -> pd.DataFrame:
-    if verbosity > 0: print("Loading rankings ...")
+    if verbosity > 0:
+        print(f"Loading rankings from '{path}' ...")
     # Read dataframe
     out = pd.read_csv(path, index_col=0, header=[0, 1, 2, 3])
     out.columns.name = ("dataset", "model", "tuning", "scoring")
@@ -44,7 +46,7 @@ def load_train_data(path: Union[Path, str], verbosity=1, subsample=None) -> (pd.
     """
 
     if verbosity > 0:
-        print("Loading train data ...")
+        print(f"Loading train data from '{path}'...")
 
     # Read csv file
     df = pd.read_csv(path, index_col=None)
@@ -73,7 +75,7 @@ def load_test_data(path: Union[Path, str], verbosity=1, subsample=None) -> pd.Da
     """
 
     if verbosity > 0:
-        print("Loading test data ...")
+        print(f"Loading test data from '{path}'...")
     # Read dataframe
     df = pd.read_csv(path, index_col=None)
 
