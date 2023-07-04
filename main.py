@@ -44,30 +44,26 @@ def main():
                                               verbosity=verbosity,
                                               subsample=args.subsample)
     # Drop cv_score
-    df_train = df_train.drop(columns=["cv_score"], axis=1)
+    if "cv_score" in df_train.columns:
+        df_train = df_train.drop(columns=["cv_score"], axis=1)
 
-    # Split into train and validation set for internal comparison / evaluation
-    X_train, X_holdout, y_train, y_holdout = src.evaluate_regression.custom_train_test_split(df_train, FACTORS, TARGET)
     # Load Test data (Hold-out-set) that is used for course-internal scoring
     X_test = src.load_datasets.load_test_data(path=cfg["paths"]["test_values_path"],
                                               verbosity=verbosity,
                                               subsample=args.subsample)
-    # Make copy of validation set to fit into schema that supervisor function get_rankings() expects
-    X_holdout_original = X_holdout.copy()
     # Get indices for custom cross validation that is used within the modelling.py module
-    indices = src.evaluate_regression.custom_cross_validated_indices(pd.concat([X_train, y_train], axis=1),
+    indices = src.evaluate_regression.custom_cross_validated_indices(df_train,
                                                                      FACTORS, TARGET,
                                                                      n_splits=cfg["modelling"]["k_fold"],
                                                                      shuffle=True, random_state=1444)
+    X_train = df_train.drop(TARGET, axis=1)
+    y_train = df_train[TARGET]
 
     ### FEATURE ENGINEERING ###
     # General encodings: One Hot Encode (OHE) subset of features
     X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
                                                       cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
                                                       verbosity=verbosity)
-    X_holdout = src.encoding.ohe_encode_test_data(X_test=X_holdout,
-                                                  cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
-                                                  ohe=ohe, verbosity=verbosity)
     X_test = src.encoding.ohe_encode_test_data(X_test=X_test,
                                                cols_to_encode=cfg["feature_engineering"]["features_to_ohe"],
                                                ohe=ohe, verbosity=verbosity)
@@ -85,12 +81,6 @@ def main():
                                                 dim_reduction=cfg["feature_engineering"]["poincare_embedding"][
                                                     "dim_reduction"],
                                                 verbosity=verbosity)
-    X_holdout, _ = src.encoding.poincare_encoding(path_to_embeddings=cfg["paths"]["embeddings_path"],
-                                                  data=X_holdout,
-                                                  column_to_encode="encoder",
-                                                  explode_dim=cfg["feature_engineering"]["poincare_embedding"][
-                                                      "explode_dim"],
-                                                  verbosity=verbosity)
     X_test, _ = src.encoding.poincare_encoding(path_to_embeddings=cfg["paths"]["embeddings_path"],
                                                data=X_test,
                                                column_to_encode="encoder",
@@ -106,12 +96,6 @@ def main():
                                                "nan_threshold"],
                                            replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"][
                                                "replacing_strategy"])
-    X_holdout = add_dataset_meta_information(df=X_holdout,
-                                             path_to_meta_df=cfg["paths"]["dataset_meta_information_path"],
-                                             nan_threshold=cfg["feature_engineering"]["dataset_meta_information"][
-                                                 "nan_threshold"],
-                                             replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"][
-                                                 "replacing_strategy"])
     X_test = add_dataset_meta_information(df=X_test,
                                           path_to_meta_df=cfg["paths"]["dataset_meta_information_path"],
                                           nan_threshold=cfg["feature_engineering"]["dataset_meta_information"][
@@ -122,14 +106,13 @@ def main():
     ### NORMALIZATION ###
     X_train, scaler = normalize_train_data(X_train=X_train, method=cfg["feature_engineering"]["normalize"]["method"],
                                            verbosity=verbosity)
-    X_holdout = normalize_test_data(X_test=X_holdout, scaler=scaler, verbosity=verbosity)
     X_test = normalize_test_data(X_test=X_test, scaler=scaler, verbosity=verbosity)
 
     # Save processed data in data/preprocessed
     print("Saving processed data in 'data/preprocessed/' ...")
-    X_holdout_original.to_csv("data/preprocessed/X_hold_out_original.csv", index=False)
-    X_holdout.to_csv("data/preprocessed/X_holdout.csv", index=False)
-    y_holdout.to_csv("data/preprocessed/y_holdout.csv", index=False)
+    #X_holdout_original.to_csv("data/preprocessed/X_hold_out_original.csv", index=False)
+    #X_holdout.to_csv("data/preprocessed/X_holdout.csv", index=False)
+    #y_holdout.to_csv("data/preprocessed/y_holdout.csv", index=False)
     X_train.to_csv("data/preprocessed/X_train.csv", index=False)
     y_train.to_csv("data/preprocessed/y_train.csv", index=False)
 
@@ -149,27 +132,10 @@ def main():
         src.mlflow_registry.log_model_eval(cv_result, cfg_path, run, verbosity)
 
         ### PREDICTIONS ###
-        # Make final predictions on test data and validation data
-        y_pred_holdout = src.modelling.make_prediction(model=model, test_data=X_holdout,
-                                                       result_path=cfg["paths"]["result_path"], save_data=False,
-                                                       target=TARGET, verbosity=verbosity)
-
+        # Make final predictions on test data
         y_pred_test = src.modelling.make_prediction(model=model, test_data=X_test,
                                                     result_path=cfg["paths"]["result_path"], save_data=True,
                                                     target=TARGET, verbosity=verbosity)
-
-        ### RANKINGS ###
-        # Concat to df_pred for spearman evaluation
-        df_pred = pd.concat([X_holdout_original, y_holdout, y_pred_holdout], axis=1)
-        rankings_test = src.evaluate_regression.get_rankings(df_pred, factors=FACTORS,
-                                                             new_index=NEW_INDEX, target=TARGET)
-        rankings_pred = src.evaluate_regression.get_rankings(df_pred, factors=FACTORS,
-                                                             new_index=NEW_INDEX, target=TARGET+"_pred")
-
-        # Get Average Spearman, print and log it
-        avg_spearman = src.evaluate_regression.average_spearman(rankings_test, rankings_pred)
-        print(f"Average Spearman of hold-out-set: {avg_spearman:.4f}")
-        mlflow.log_metric(key="average_spearman", value=avg_spearman)
 
     # Track time for total runtime and display end of pipeline
     runtime = time.time() - start_time
