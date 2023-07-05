@@ -71,11 +71,12 @@ def display_runtime(runtime) -> str:
     """
     Helper function to display the runtime of our pipeline, i.e. if runtime > 60 seconds output minutes.
     :param runtime: runtime in seconds
-    :return: String to display the runtime in seconds or minutes
+    :return: String to display the runtime in seconds and/or minutes
     """
     if runtime > 60:
-        runtime = runtime / 60
-        return f"took {runtime:.2f} minutes"
+        minutes = runtime // 60
+        seconds = runtime % 60
+        return f"took {int(minutes)}min and {int(seconds)}sec"
     else:
         return f"took {runtime:.2f} seconds"
 
