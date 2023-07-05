@@ -2,7 +2,7 @@ import xgboost
 import pandas as pd
 
 from sklearn.dummy import DummyRegressor
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
@@ -44,9 +44,10 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
             "DecisionTree": DecisionTreeRegressor(random_state=42),
             "RandomForest": RandomForestRegressor(random_state=42, n_jobs=-1),
             "XGBoost": xgboost.XGBRegressor(random_state=42),
+            "ExtraTrees": ExtraTreesRegressor(random_state=42, n_jobs=-1),
+            "LinearRegression": LinearRegression()
             #"LGBM": lgb.LGBMRegressor(random_state=42),
             #"CatBoost": catboost.CatBoostRegressor(random_state=42),
-            "LinearRegression": LinearRegression()
         }
     else:
         model_collection = {
