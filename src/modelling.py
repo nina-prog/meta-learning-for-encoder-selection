@@ -2,13 +2,12 @@ import xgboost
 import pandas as pd
 
 from sklearn.dummy import DummyRegressor
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-#import lightgbm as lgb
-#import catboost
-
+# import lightgbm as lgb
+# import catboost
 
 from sklearn.metrics import make_scorer, mean_squared_error, r2_score
 from src.evaluate_regression import custom_spearmanr_scorer
@@ -34,44 +33,26 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
     :return: Fitted estimator and cv_results
     """
 
-    # Keep string of model for printing reasons
-    model_string = model
+    # Get model from model collection
+    model, model_string = get_model(model=model, hyperparam_grid=hyperparam_grid)
 
-    # Initialize model with default parameters if no hyperparameter grid is given
-    if hyperparam_grid is None:
-        model_collection = {
-            "Dummy": DummyRegressor(),
-            "DecisionTree": DecisionTreeRegressor(random_state=42),
-            "RandomForest": RandomForestRegressor(random_state=42, n_jobs=-1),
-            "XGBoost": xgboost.XGBRegressor(random_state=42),
-            #"LGBM": lgb.LGBMRegressor(random_state=42),
-            #"CatBoost": catboost.CatBoostRegressor(random_state=42),
-            "LinearRegression": LinearRegression()
-        }
-    else:
-        model_collection = {
-            # TBD: Define here models with hyperparam_grid as args
-        }
+    if verbosity > 0:
+        print(f"Performing CV with {k_fold} folds ...")
 
-    # Get model from model collection using the model parameter (str)
-    try:
-        model = model_collection[model]
-    except KeyError:
-        model = model_collection["Dummy"]
-        print(f"Model '{model}' not found in model collection! Using default DummyRegressor.")
-
-    # Perform CV
-    if verbosity > 0: print(f"Performing CV with {k_fold} folds ...")
+    # Define custom scorer
     scoring = {
         'spearman': custom_spearmanr_scorer,
         'neg_mean_squared_error': make_scorer(mean_squared_error, greater_is_better=False),
         'r2': make_scorer(r2_score)
     }
+
+    # Perform CV
     cv_results = cross_validate(estimator=model, X=train_data, y=train_labels,
                                 cv=indices, scoring=scoring, n_jobs=-1, return_train_score=True)
 
     # Fit final model on all train data
-    if verbosity > 0: print(f"Fitting final model ({model_string}) ...")
+    if verbosity > 0:
+        print(f"Fitting final model ({model_string}) ...")
     model.fit(X=train_data, y=train_labels)
 
     # Iterate through the provided scoring (list) in cv_results and print results
@@ -85,6 +66,47 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
         print("")
 
     return model, cv_results
+
+
+def get_model(model=None, hyperparam_grid=None):
+    """
+    Function to get specified model from MODEL_COLLECTION and return model object and the name of the model.
+
+    :param model: String of the model to take as key in the collection dict
+    :param hyperparam_grid: In config file specified hyperparameter grid
+
+    :return: model object, model_string: str - Name of the model
+    """
+
+    # Keep string of model for printing reasons
+    model_string = model
+
+    # Initialize model with default parameters if no hyperparameter grid is given
+    if hyperparam_grid is None:
+        MODEL_COLLECTION = {
+            "Dummy": DummyRegressor(),
+            "DecisionTree": DecisionTreeRegressor(random_state=42),
+            "RandomForest": RandomForestRegressor(random_state=42, n_jobs=-1),
+            "XGBoost": xgboost.XGBRegressor(random_state=42),
+            "ExtraTrees": ExtraTreesRegressor(random_state=42, n_jobs=-1),
+            "LinearRegression": LinearRegression()
+            # "LGBM": lgb.LGBMRegressor(random_state=42),
+            # "CatBoost": catboost.CatBoostRegressor(random_state=42),
+        }
+    else:
+        MODEL_COLLECTION = {
+            # TBD: Define here models with hyperparam_grid as args
+            "RandomForest": RandomForestRegressor(**hyperparam_grid)
+        }
+
+    # Get model from model collection using the model parameter (str)
+    try:
+        model = MODEL_COLLECTION[model]
+    except KeyError:
+        model = MODEL_COLLECTION["RandomForest"]
+        print(f"Model '{model_string}' not found in MODEL COLLECTION! Using default RandomForest instead.")
+
+    return model, model_string
 
 
 def make_prediction(model=None, test_data=None, result_path=None, save_data=True, target=None, verbosity=1):

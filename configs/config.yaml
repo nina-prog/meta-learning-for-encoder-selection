@@ -23,7 +23,7 @@ feature_engineering:
     normalize:
         method: "minmax"
 modelling:
-    model: "RandomForest"
+    model: "ExtraTrees"
     k_fold: 5
     hyperparam_grid: None
     split_size: 0.2
