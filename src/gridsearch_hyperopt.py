@@ -70,10 +70,10 @@ def perform_gridsearch(X_train, y_train, indices=None):
     model_str = str(model).split("(")[0]
 
     # Define param grid for XGB model
-    param_grid = {'max_depth': [3, 5, 7, 10, 20, 25],
-                  'min_samples_split': [2, 3, 5, 7, 10],
-                  'min_samples_leaf': [2, 3, 5, 7, 10],
-                  'n_estimators': [50, 70, 100, 150, 200, 250, 300, 400, 500, 750]
+    param_grid = {'max_depth': [3, 5, 7, 12, 25],
+                  'min_samples_split': [2, 3, 5, 10],
+                  'min_samples_leaf': [2, 3, 5, 10],
+                  'n_estimators': [50, 100, 250, 500, 750]
                   }
 
     start_time = time.time()
