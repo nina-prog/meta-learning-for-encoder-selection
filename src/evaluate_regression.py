@@ -85,8 +85,8 @@ def custom_cross_validated_indices(df: pd.DataFrame, factors: Iterable[str], tar
 
     indices = []
     for itr, ite in KFold(**kfoldargs).split(X_factors, y_factors):
-        tr = pd.merge(X_factors.iloc[itr], df.reset_index(), on=factors).index  # "index" is the index of df
-        te = pd.merge(X_factors.iloc[ite], df.reset_index(), on=factors).index  # "index" is the index of df
+        tr = pd.merge(X_factors.iloc[itr], df.reset_index(), on=factors)['index']  # "index" is the index of df
+        te = pd.merge(X_factors.iloc[ite], df.reset_index(), on=factors)['index']  # "index" is the index of df
         indices.append([tr, te])
 
     return indices
@@ -198,7 +198,7 @@ def get_rankings(df: pd.DataFrame, factors, new_index, target) -> pd.DataFrame:
 
     rankings = {}
     for group, indices in df.groupby(factors).groups.items():
-        score = df.iloc[indices].set_index(new_index)[target]
+        score = df.loc[indices].set_index(new_index)[target]
         rankings[group] = score2ranking(score, ascending=False)
 
     return pd.DataFrame(rankings)
