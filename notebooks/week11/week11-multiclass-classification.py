@@ -2,9 +2,14 @@ import os
 import pandas as pd
 import numpy as np
 import math
+import matplotlib as plt
+import seaborn as sns
+
+sns.set_style("whitegrid")
+sns.set_palette("Set2")
 
 import sys
-sys.path.append("../..")
+sys.path.append("")
 from src.load_datasets import load_dataset, load_rankings, load_train_data
 import src.evaluate_regression
 
@@ -22,7 +27,9 @@ from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier
 from sklearn.svm import LinearSVC
 from sklearn.gaussian_process import GaussianProcessClassifier
 import xgboost
+import time
 
+start_time = time.time()
 
 def get_pearson_correlated_features(data=None, threshold=0.7):
     """
@@ -57,7 +64,7 @@ new_index = "encoder"
 target = "rank"
 
 # Load data
-df_train = load_dataset("./data/raw/dataset_rank_train.csv")
+df_train = load_dataset("../../data/raw/dataset_rank_train.csv")
 
 if "cv_score" in df_train.columns:
     df_train = df_train.drop("cv_score", axis=1)
@@ -80,8 +87,8 @@ X_train, ohe = src.encoding.ohe_encode_train_data(X_train=X_train,
                                                   verbosity=2)
 
 # Encoder encoding: Poincare Embeddings for feature "encoder"
-X_train, _ = src.encoding.poincare_encoding(path_to_graph="./data/raw/graph.adjlist",
-                                            path_to_embeddings="./data/preprocessed/embeddings.csv",
+X_train, _ = src.encoding.poincare_encoding(path_to_graph="../../data/raw/graph.adjlist",
+                                            path_to_embeddings="../../data/preprocessed/embeddings.csv",
                                             data=X_train,
                                             column_to_encode="encoder",
                                             encode_dim=50,
@@ -92,7 +99,7 @@ X_train, _ = src.encoding.poincare_encoding(path_to_graph="./data/raw/graph.adjl
 
 # Add meta information
 X_train = add_dataset_meta_information(df=X_train,
-                                       path_to_meta_df="./data/preprocessed/dataset_agg.csv",
+                                       path_to_meta_df="../../data/preprocessed/dataset_agg.csv",
                                        nan_threshold=0.4,
                                        replacing_strategy="median")
 
@@ -147,6 +154,7 @@ scoring = {
 
 # ToDo: More models
 # Traverse models and score
+scores = {}
 for model in models:
     print(model)
     cv_results = cross_validate(estimator=model, 
@@ -156,7 +164,19 @@ for model in models:
                                 scoring=scoring,
                                 n_jobs=-1, 
                                 return_train_score=True)
+    # save test scores
+    scores[model] = [cv_results["test_spearman"], cv_results["test_MCC"]]
 
+    # print cv test scores
     for scorer in list(scoring.keys()):
         print(f"CV Test {scorer}: \t{round(cv_results[f'test_{scorer}'].mean(), 4)} +/- {round(cv_results[f'test_{scorer}'].std(), 4)}")
     print("")
+
+# score dict with model: [test_spearmen, test_mcc] to df with colunms: model, test_spearman, test_mcc
+scores_df = pd.DataFrame.from_dict(scores, orient="index", columns=["test_spearman", "test_mcc"]).reset_index(names="model")
+# save scores as pickle
+scores_df.to_pickle("./data/preprocessed/rank_scores_multiclass.pkl")
+
+end_time = time.time()
+print(f"Phase-2 took {round((end_time - start_time) / 60, 2)} minutes")
+
