@@ -26,7 +26,7 @@ data_cleaning:
     pearson_correlation:
         threshold: 0.7
 modelling:
-    model: "ExtraTrees"
+    model: "ExtraTreesClassifier"
     k_fold: 5
     hyperparam_grid: None
     split_size: 0.2
