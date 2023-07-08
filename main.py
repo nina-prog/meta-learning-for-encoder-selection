@@ -15,6 +15,7 @@ import src.modelling
 import src.mlflow_registry
 import src.encoding
 import src.evaluate_regression
+import src.data_cleaning
 
 from src.feature_engineering import normalize_train_data, normalize_test_data
 from src.meta_information import add_dataset_meta_information
@@ -57,7 +58,7 @@ def main():
                                                                      n_splits=cfg["modelling"]["k_fold"],
                                                                      shuffle=True, random_state=1444)
     X_train = df_train.drop(TARGET, axis=1)
-    y_train = df_train[TARGET]
+    y_train = df_train[[TARGET]]
 
     ### FEATURE ENGINEERING ###
     # General encodings: One Hot Encode (OHE) subset of features
@@ -102,19 +103,17 @@ def main():
                                               "nan_threshold"],
                                           replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"][
                                               "replacing_strategy"])
-
+    
+    # Drop correlated features
+    X_train, X_test = src.data_cleaning.drop_pearson_correlated_features(train_data=X_train, 
+                                                                         test_data=X_test, 
+                                                                         threshold=cfg["data_cleaning"]["pearson_correlation"]["threshold"], 
+                                                                         verbosity=verbosity)
+    
     ### NORMALIZATION ###
     X_train, scaler = normalize_train_data(X_train=X_train, method=cfg["feature_engineering"]["normalize"]["method"],
                                            verbosity=verbosity)
     X_test = normalize_test_data(X_test=X_test, scaler=scaler, verbosity=verbosity)
-
-    # Save processed data in data/preprocessed
-    print("Saving processed data in 'data/preprocessed/' ...")
-    #X_holdout_original.to_csv("data/preprocessed/X_hold_out_original.csv", index=False)
-    #X_holdout.to_csv("data/preprocessed/X_holdout.csv", index=False)
-    #y_holdout.to_csv("data/preprocessed/y_holdout.csv", index=False)
-    X_train.to_csv("data/preprocessed/X_train.csv", index=False)
-    y_train.to_csv("data/preprocessed/y_train.csv", index=False)
 
     ### MODELLING ###
     # Log model evaluation to mlflow registry
