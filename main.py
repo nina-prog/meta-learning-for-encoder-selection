@@ -110,6 +110,13 @@ def main():
                                                                          threshold=cfg["data_cleaning"]["pearson_correlation"]["threshold"], 
                                                                          verbosity=verbosity)
     
+    # Select features 
+    X_train, X_test = src.feature_engineering.feature_selection(X_train=X_train,
+                                                                X_test=X_test,
+                                                                y_train=y_train,
+                                                                quantile=0.4,
+                                                                verbosity=2)
+    
     ### NORMALIZATION ###
     X_train, scaler = normalize_train_data(X_train=X_train, method=cfg["feature_engineering"]["normalize"]["method"],
                                            verbosity=verbosity)
