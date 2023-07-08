@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
 # import lightgbm as lgb
 # import catboost
 
@@ -45,7 +46,14 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
         'neg_mean_squared_error': make_scorer(mean_squared_error, greater_is_better=False),
         'r2': make_scorer(r2_score)
     }
-
+    
+    if model_string == "ExtraTrees":
+        target = list(train_labels.columns)[0]
+        scaler = MinMaxScaler()
+        y_scaled = scaler.fit_transform(train_labels)
+        train_labels = pd.DataFrame(y_scaled, columns=train_labels.columns)
+        train_labels = train_labels[target]
+    
     # Perform CV
     cv_results = cross_validate(estimator=model, X=train_data, y=train_labels,
                                 cv=indices, scoring=scoring, n_jobs=-1, return_train_score=True)

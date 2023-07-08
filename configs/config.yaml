@@ -22,6 +22,9 @@ feature_engineering:
         replacing_strategy: "median"
     normalize:
         method: "minmax"
+data_cleaning:
+    pearson_correlation:
+        threshold: 0.7
 modelling:
     model: "ExtraTrees"
     k_fold: 5
