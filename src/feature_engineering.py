@@ -86,7 +86,8 @@ def feature_selection(X_train=None, X_test=None, y_train=None, quantile=0.4, ver
     
     # Select the features and return the data frames
     X_train = X_train[sf]
-    X_test = X_test[sf]
+    if X_test is not None:
+        X_test = X_test[sf]
     
-    return X_train, X_train
+    return X_train, X_test
     

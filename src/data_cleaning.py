@@ -42,6 +42,7 @@ def drop_pearson_correlated_features(train_data=None, test_data=None, threshold=
 
     # Drop features
     train_data = train_data.drop(correlated_features, axis=1)
-    test_data = test_data.drop(correlated_features, axis=1)
+    if test_data is not None:
+        test_data = test_data.drop(correlated_features, axis=1)
     
     return train_data, test_data
