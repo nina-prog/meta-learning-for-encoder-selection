@@ -13,7 +13,7 @@ paths:
 feature_engineering:
     features_to_ohe: ["model", "tuning", "scoring"]
     poincare_embedding:
-        dim: 25
+        dim: 18
         epochs: 5000
         explode_dim: True
         dim_reduction: None
