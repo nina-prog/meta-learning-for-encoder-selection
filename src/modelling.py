@@ -2,7 +2,7 @@ import xgboost
 import pandas as pd
 
 from sklearn.dummy import DummyRegressor
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, ExtraTreesClassifier
 from sklearn.model_selection import cross_validate
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
@@ -47,12 +47,13 @@ def train_model(model=None, train_data=None, train_labels=None, hyperparam_grid=
         'r2': make_scorer(r2_score)
     }
     
-    if model_string == "ExtraTrees":
-        target = list(train_labels.columns)[0]
+    # Scale target if necessary (for ExtraTreesRegressor)
+    target = list(train_labels.columns)[0]
+    if model_string == "ExtraTreesRegressor":
         scaler = MinMaxScaler()
         y_scaled = scaler.fit_transform(train_labels)
         train_labels = pd.DataFrame(y_scaled, columns=train_labels.columns)
-        train_labels = train_labels[target]
+    train_labels = train_labels[target]
     
     # Perform CV
     cv_results = cross_validate(estimator=model, X=train_data, y=train_labels,
@@ -96,8 +97,9 @@ def get_model(model=None, hyperparam_grid=None):
             "DecisionTree": DecisionTreeRegressor(random_state=42),
             "RandomForest": RandomForestRegressor(random_state=42, n_jobs=-1),
             "XGBoost": xgboost.XGBRegressor(random_state=42),
-            "ExtraTrees": ExtraTreesRegressor(random_state=42, n_jobs=-1),
-            "LinearRegression": LinearRegression()
+            "ExtraTreesRegressor": ExtraTreesRegressor(random_state=42, n_jobs=-1),
+            "LinearRegression": LinearRegression(), 
+            "ExtraTreesClassifier": ExtraTreesClassifier(random_state=42, n_jobs=-1)
             # "LGBM": lgb.LGBMRegressor(random_state=42),
             # "CatBoost": catboost.CatBoostRegressor(random_state=42),
         }

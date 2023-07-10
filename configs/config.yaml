@@ -13,12 +13,12 @@ paths:
 feature_engineering:
     features_to_ohe: ["model", "tuning", "scoring"]
     poincare_embedding:
-        dim: 25
+        dim: 18
         epochs: 5000
         explode_dim: True
         dim_reduction: None
     dataset_meta_information:
-        nan_threshold: 0.4
+        nan_threshold: 0.5
         replacing_strategy: "median"
     normalize:
         method: "minmax"
@@ -26,7 +26,7 @@ data_cleaning:
     pearson_correlation:
         threshold: 0.7
 modelling:
-    model: "ExtraTrees"
+    model: "ExtraTreesClassifier"
     k_fold: 5
     hyperparam_grid: None
     split_size: 0.2
