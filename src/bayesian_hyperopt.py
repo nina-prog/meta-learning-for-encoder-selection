@@ -11,11 +11,13 @@ Troubleshooting:
 - If there is an error with np.int deprecated, change the according line to np.int32 in the numpy source file
 """
 import pandas as pd
+import numpy as np
 import time
 import os
 import datetime
 
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectKBest, f_regression
 
 from encoding import poincare_encoding, ohe_encode_train_data
 from evaluate_regression import custom_spearmanr_scorer, custom_cross_validated_indices
@@ -25,13 +27,93 @@ from meta_information import add_dataset_meta_information
 from utils import parse_args, parse_config, display_runtime
 
 from skopt import BayesSearchCV
-from skopt.space import Integer
+from skopt.space import Integer, Categorical
 
 
 # Constants for supervisors functions
 FACTORS = ["dataset", "model", "tuning", "scoring"]
 NEW_INDEX = "encoder"
 TARGET = "rank"
+
+
+def get_pearson_correlated_features(data=None, threshold=0.7):
+    """
+    Calculates the pearson correlation of all features in the dataframe and returns a set of features with a
+    correlation greater than the threshold.
+
+    :param data: The input dataframe.
+    :type data: pd.DataFrame
+    :param threshold: The threshold for the correlation coefficient in the range of [0.0, 1.0].
+    :type threshold: float,optional(default=0.7)
+
+    :return: The set of features with a correlation greater than the threshold.
+    :rtype: set
+    """
+    # Calculate correlation matrix
+    corr_matrix = data.corr()
+
+    # Get the set of correlated features
+    correlated_features = set()
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            if abs(corr_matrix.iloc[i, j]) > threshold:
+                colname = corr_matrix.columns[i]
+                correlated_features.add(colname)
+
+    return correlated_features
+
+
+def drop_pearson_correlated_features(train_data=None, threshold=0.7, verbosity=0):
+    if verbosity > 0:
+        print(f"Drop pearson correlated features with threshold {threshold}...")
+    correlated_features = get_pearson_correlated_features(data=train_data, threshold=threshold)
+
+    # Filter out some features
+    if verbosity > 0:
+        print("Filter correlated features")
+    correlated_features = [f for f in correlated_features if not f.startswith("enc_dim_")]
+    correlated_features = [f for f in correlated_features if not f.startswith("model_")]
+    correlated_features = [f for f in correlated_features if not f.startswith("tuning_")]
+    correlated_features = [f for f in correlated_features if not f.startswith("scoring_")]
+
+    # Drop features
+    train_data = train_data.drop(correlated_features, axis=1)
+
+    return train_data
+
+
+def feature_selection(X_train=None, y_train=None, quantile=0.4, verbosity=0):
+    """
+    Function to select feature based on either f_regression or mutual_info_regression.
+    Takes train- and test-data along with the train labels to fit the SelectKBest.
+    Also takes a number [0, 1] quantile to get all the features which provide more information than the calculated quantile.
+    Returns the train and test data with the selected features.
+    The features, which are needed for the avg spearman function are kept no matter which score they achieve.
+    """
+    if verbosity > 0:
+        print("Feature selection...")
+
+    fs = SelectKBest(score_func=f_regression, k='all')  # or mutual_info_regression
+    #target = list(y_train.columns)[0]
+    fs.fit(X_train, y_train)
+
+    # Select columns based on mask
+    mask = [x >= np.quantile(fs.scores_, 0.4) for x in fs.scores_]
+    X_train_fs = X_train.loc[:, mask]
+    selected_features = list(X_train_fs.columns)
+    # print(f"{len(selected_features)} selected")
+
+    # Do not drop the features needed for avg_spearman (the needed features start with enc_dim, tuning, scoring, model)
+    sf = list(X_train.columns)
+    sf = [f for f in sf if
+          f not in selected_features or not f.startswith("enc_dim_") or not f.startswith("tuning_") or not f.startswith(
+              "scoring_") or not f.startswith("model_")]
+    # print(f"After including the needed features: {len(sf)}")
+
+    # Select the features and return the data frames
+    X_train = X_train[sf]
+
+    return X_train
 
 
 def perform_hyperopt(X_train, y_train, indices=None, n_iter=100):
@@ -56,7 +138,9 @@ def perform_hyperopt(X_train, y_train, indices=None, n_iter=100):
     param_grid = {'max_depth': Integer(3, 30),
                   'min_samples_split': Integer(2, 15),
                   'min_samples_leaf': Integer(2, 15),
-                  'n_estimators': Integer(50, 800)
+                  'n_estimators': Integer(50, 800),
+                  'max_features': Categorical(["sqrt", "log2", None]),
+                  'criterion': Categorical(["gini", "entropy", "log_loss"])
                   }
 
     start_time = time.time()
@@ -153,6 +237,17 @@ def get_processed_data():
                                                "nan_threshold"],
                                            replacing_strategy=cfg["feature_engineering"]["dataset_meta_information"][
                                                "replacing_strategy"])
+
+    # Drop correlated features
+    X_train = drop_pearson_correlated_features(train_data=X_train,
+                                               threshold=cfg["data_cleaning"]["pearson_correlation"]["threshold"],
+                                               verbosity=verbosity)
+
+    # Select features
+    X_train = feature_selection(X_train=X_train,
+                                y_train=y_train,
+                                quantile=0.4,
+                                verbosity=2)
 
     ### NORMALIZATION ###
     X_train, scaler = normalize_train_data(X_train=X_train, method=cfg["feature_engineering"]["normalize"]["method"],
