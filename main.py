@@ -7,20 +7,12 @@ python3 main.py --config configs/config.yaml --subsample 100
 import time
 import pandas as pd
 
-import mlflow.sklearn
-
 import src.utils
 import src.load_datasets
-import src.modelling
-import src.mlflow_registry
-import src.encoding
-import src.evaluate_regression
-import src.data_cleaning
 
-from src.feature_engineering import normalize_train_data, normalize_test_data
-from src.meta_information import add_dataset_meta_information
-
+#import src.regression_method
 import src.pointwise_method
+import src.pairwise_method
 
 
 def main():
@@ -52,6 +44,7 @@ def main():
     # Valid arguments are 'regression', 'pointwise', 'pairwise', 'listwise'
     # For each method preprocess data, train a model and predict results
     if cfg["general"]["method"] == "regression":
+        # ToDo
         pass
     elif cfg["general"]["method"] == "pointwise":
         # Constants for supervisors functions
@@ -69,7 +62,8 @@ def main():
                                                                          FACTORS, 
                                                                          TARGET,
                                                                          n_splits=cfg["modelling"]["k_fold"],
-                                                                         shuffle=True, random_state=1444)
+                                                                         shuffle=True, 
+                                                                         random_state=1444)
         
         # Train model and predict results of test data
         model = src.pointwise_method.modelling(X_train=X_train,
@@ -81,7 +75,35 @@ def main():
                                                   X_test=X_test,
                                                   config=cfg)
     elif cfg["general"]["method"] == "pairwise":
-        pass
+        # Constants for supervisors functions
+        FACTORS = ["dataset", "model", "tuning", "scoring"]
+        NEW_INDEX = "encoder"
+        TARGET = "rank"
+        
+        # Preprocess data
+        X_train, y_train, X_test, base_df = src.pairwise_method.preprocessing(df_train=df_train, 
+                                                                               X_test=X_test, 
+                                                                               config=cfg)
+        
+        # Get indices for custom cross validation that is used within the modelling.py module
+        indices = src.evaluate_regression.custom_cross_validated_indices(pd.concat([X_train, y_train], axis=1),
+                                                                         list(X_train.columns),  # factors
+                                                                         list(y_train.columns),  # target
+                                                                         n_splits=cfg["modelling"]["k_fold"],
+                                                                         shuffle=True, 
+                                                                         random_state=1444)
+        
+        # Train model and predict results of test data
+        model = src.pairwise_method.modelling(X_train=X_train,
+                                               y_train=y_train,
+                                               base_df=base_df,
+                                               indices=indices,
+                                               config_path=cfg_path,
+                                               config=cfg)
+        src.pairwise_method.prediction_pointwise(model=model,
+                                                  X_test=X_test,
+                                                  target_columns=list(y_train.columns),
+                                                  config=cfg)
     elif cfg["general"]["method"] == "listwise":
         pass
     else:

@@ -1,6 +1,6 @@
 general:
     verbosity: 2
-    method: "pointwise"
+    method: "pairwise"
 paths:
     dataset_path: "data/raw/dataset.csv"
     rankings_path: "data/raw/rankings.csv"
