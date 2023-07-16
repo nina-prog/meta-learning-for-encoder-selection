@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 import mlflow.sklearn
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 
 import src.utils
@@ -40,7 +40,7 @@ def preprocessing(df_train, X_test, config):
     y_train = pd.merge(X_train,
                        pu.get_pairwise_target(df_train, features=FACTORS, target=TARGET, column_to_compare="encoder"),
                        on=FACTORS, how="left").drop(FACTORS, axis=1).fillna(0)
-    base_df = df_train.copy()
+    base_df_mod = df_train.copy()
 
     
     # General encodings: One Hot Encode (OHE) subset of features
@@ -51,7 +51,7 @@ def preprocessing(df_train, X_test, config):
                                                cols_to_encode=config["feature_engineering"]["features_to_ohe"],
                                                ohe=ohe, 
                                                verbosity=verbosity)
-    base_df_mod = src.encoding.ohe_encode_test_data(X_test=base_df,
+    base_df_mod = src.encoding.ohe_encode_test_data(X_test=base_df_mod,
                                                 cols_to_encode=config["feature_engineering"]["features_to_ohe"],
                                                 ohe=ohe, 
                                                 verbosity=verbosity)
@@ -98,14 +98,18 @@ def modelling(X_train, y_train, base_df, indices, config_path, config):
     new_factors.remove("encoder")
     
     # Setup pipeline / model
+    encoder = OneHotEncoder(handle_unknown="ignore", dtype=np.float32)
     if config["feature_engineering"]["normalize"]["method"] == "minmax":
         scaler = MinMaxScaler()
 
     # Get model
     model, model_string = src.modelling.get_model(model=config["modelling"]["model"], 
                                                   hyperparam_grid=None)
-
-    pipeline = Pipeline([("scaler", scaler), ("model", model)])
+    
+    pipeline = Pipeline([
+        #("ohe", encoder),
+        ("scaler", scaler), 
+        ("model", model)])
     
     # Iterate over folds
     #with mlflow.start_run(tags=src.mlflow_registry.get_mlflow_tags(X_train, config)) as run:
@@ -145,15 +149,75 @@ def modelling(X_train, y_train, base_df, indices, config_path, config):
     return pipeline
 
 
-def prediction_pointwise(model, X_test, target_columns, config):
+def prediction_pointwise(model, X_test, target_columns, merge_cols, config):
     verbosity = config["general"]["verbosity"]
     
-    predictions = pd.DataFrame(model.predict(X_test), columns=target_columns)
-    predictions.index = X_test.index
+    y_pred = pd.DataFrame(model.predict(X_test), columns=target_columns, index=X_test.index)
+    predicted_ranks = pu.join_pairwise2rankings(X_test, y_pred, list(X_test.columns))
+    
+    df_pred = pd.merge(X_test,
+                       predicted_ranks,
+                       on=merge_cols,  #new_factors + ["encoder"], 
+                       how="inner")
+    
+    # Revert OHE
+    def revert_scoring_ohe(row):
+        tuning = "Cannot reconstruct"
+        if row["scoring_ACC"] == 1:
+            tuning = "ACC"
+        elif row["scoring_AUC"] == 1:
+            tuning = "AUC"
+        elif row["scoring_F1"] == 1:
+            tuning = "F1"
+        return tuning
 
+    def revert_tuning_ohe(row):
+        tuning = "Cannot reconstruct"
+        if row["tuning_full"] == 1:
+            tuning = "full"
+        elif row["tuning_model"] == 1:
+            tuning = "model"
+        elif row["tuning_no"] == 1:
+            tuning = "no"
+        return tuning
+
+    def revert_model_ohe(row):
+        model = "Cannot reconstruct"
+        if row["model_DTC"] == 1:
+            model = "DTC"
+        elif row["model_KNC"] == 1:
+            model = "KNC"
+        elif row["model_LGBMC"] == 1:
+            model = "LGBMC"
+        elif row["model_LR"] == 1:
+            model = "LR"
+        elif row["model_SVC"] == 1:
+            model = "SVC"
+        return model 
+
+    df_pred["model"] = df_pred.apply(revert_model_ohe, axis=1)
+    df_pred["tuning"] = df_pred.apply(revert_tuning_ohe, axis=1)
+    df_pred["scoring"] = df_pred.apply(revert_scoring_ohe, axis=1)
+    
+    # Remove one hot encoded columns
+    cols_to_drop = list(X_test.columns)
+    cols_to_drop = [x for x in cols_to_drop if x.startswith("scoring_") or x.startswith("tuning_") or x.startswith("model_")]
+    df_pred = df_pred.drop(cols_to_drop, axis=1)
+    df_pred = df_pred[FACTORS + ["encoder", "rank_pred"]]
+    
+    #print(df_pred.columns)
+    nf = list(df_pred.columns)
+    if NEW_INDEX[0] in nf:
+        nf.remove(NEW_INDEX[0])
+    if "rank_pred" in nf:
+        nf.remove("rank_pred")
+    
+    rankings_pred = er.get_rankings(df_pred.drop_duplicates(), factors=nf, new_index=NEW_INDEX, target="rank_pred")
+    
     # Save prediction and print information if save_data parm is True
-    predictions.to_csv(config["paths"]["result_path"], 
-                       index=False)
+    # rankings_pred.to_csv(config["paths"]["result_path"], 
+    df_pred.drop_duplicates().to_csv(config["paths"]["result_path"], 
+                           index=False)
     if verbosity > 0:
         print(f"Saved final prediction in '{config['paths']['result_path']}'")
     

@@ -100,10 +100,15 @@ def main():
                                                indices=indices,
                                                config_path=cfg_path,
                                                config=cfg)
+        
+        merge_cols = list(base_df)
+        merge_cols.remove("rank")
+        merge_cols.remove("encoder")
         src.pairwise_method.prediction_pointwise(model=model,
-                                                  X_test=X_test,
-                                                  target_columns=list(y_train.columns),
-                                                  config=cfg)
+                                                 X_test=X_test,
+                                                 target_columns=list(y_train.columns),
+                                                 merge_cols=merge_cols,
+                                                 config=cfg)
     elif cfg["general"]["method"] == "listwise":
         pass
     else:
