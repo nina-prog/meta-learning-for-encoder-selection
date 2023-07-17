@@ -14,3 +14,5 @@ __pycache__/
 # MLFlow runs
 /mlruns/*
 
+# Virtual environment on server (created with instructions from readme)
+venv-phase-2
