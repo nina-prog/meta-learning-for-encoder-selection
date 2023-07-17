@@ -35,5 +35,5 @@ pyvis==0.1.9
 gensim==4.1.2
 category-encoders==2.6.1
 openml==0.14.0
-tensorflow==2.10.0
-tensorflow-ranking==0.5.2
+tensorflow
+tensorflow-ranking
