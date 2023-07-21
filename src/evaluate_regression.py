@@ -92,6 +92,26 @@ def custom_cross_validated_indices(df: pd.DataFrame, factors: Iterable[str], tar
     return indices
 
 
+def train_val_test_split(df: pd.DataFrame, factors: Iterable[str], target: str,
+                         **kfoldargs) -> List[List[Iterable[int]]]:
+    train_test_indices = custom_cross_validated_indices(df, factors, target, **kfoldargs)
+    
+    indices = []
+    for fold in train_test_indices:
+        # Split train in train and validation
+        # Then use the first split as train/val split
+        train_validation_indices = custom_cross_validated_indices(df.iloc[fold[0]], factors, target, **kfoldargs)
+        
+        # Get indices
+        train_indices = train_validation_indices[0][0]
+        val_indices = train_validation_indices[0][1]
+        
+        # Create train/val/test indices
+        indices.append([train_indices, val_indices, fold[1]])
+
+    return indices
+
+
 def custom_spearmanr_scorer(clf, X, y, **kwargs):
     # Load embeddings 
     emb_df = pd.read_csv("data/preprocessed/embeddings.csv", index_col=0)
