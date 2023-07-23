@@ -21,13 +21,18 @@ NORMALIZATION_METHOD: str
 
 
 def init_global_vars(cfg) -> None:
+    """ Function to initialize global variables
+
+    :param cfg: dict -- Parsed config file
+    :return: None
+    """
     global EPOCHS, BATCH_SIZE, DROP_OUT, LEARNING_RATE, NORMALIZATION_METHOD
 
-    EPOCHS: int = cfg["neural_net"]["epochs"]
-    BATCH_SIZE: int = cfg["neural_net"]["batch_size"]
-    DROP_OUT: float = cfg["neural_net"]["dropout_rate"]
-    LEARNING_RATE: float = cfg["neural_net"]["learning_rate"]
-    NORMALIZATION_METHOD: str = cfg["feature_engineering"]["normalize"]["method"]
+    EPOCHS = cfg["neural_net"]["epochs"]
+    BATCH_SIZE = cfg["neural_net"]["batch_size"]
+    DROP_OUT = cfg["neural_net"]["dropout_rate"]
+    LEARNING_RATE = cfg["neural_net"]["learning_rate"]
+    NORMALIZATION_METHOD = cfg["feature_engineering"]["normalize"]["method"]
 
 
 def get_model(input_dim: int, output_dim: int, drop_out: float, lr: float) -> tf.keras.Sequential:
