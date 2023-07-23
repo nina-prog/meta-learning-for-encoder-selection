@@ -138,7 +138,7 @@ def perform_cv_neural_net(cfg, cv_indices, X_train, y_train, X_train_org, factor
             print(f"\n AVG Spearman of Fold {i}: {avg_spearman}\n")
 
     if verbosity > 0:
-        print(f"Average Spearman: {np.mean(scores):.4f} +/- {np.std(scores):.4f}")
+        print(f"\nAverage Spearman of all folds: {np.mean(scores):.4f} +/- {np.std(scores):.4f}\n")
 
     return scores, histories
 
