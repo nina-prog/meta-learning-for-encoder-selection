@@ -129,7 +129,10 @@ def main():
 
         # Bring train data in desired shape for listwise pred
         df_train = pd.pivot(df_train, index=FACTORS, columns="encoder", values="rank").reset_index()
-        X_test = pd.pivot(X_test, index=FACTORS, columns="encoder", values="rank").reset_index()
+        # TODO: SAME FOR X_TEST BUT HERE SEEMS TO BE AN ERROR? SUPERVISOR MISSING COLUMN 'ENCODER' ???
+        X_test = pd.pivot(X_test, index=FACTORS, columns="encoder").reset_index()
+        X_test.columns = X_test.columns.droplevel(level="encoder")
+        X_test = X_test[FACTORS]
 
         # Get train data
         X_train = df_train[FACTORS]
