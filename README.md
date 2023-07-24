@@ -20,12 +20,24 @@ This repository contains our project of the phase 2 of the **Practical Course: D
  ┣ 📂notebooks                 <-- Jupyter Notebooks used in development.
  ┃ ┗ 📂weekXX                  <-- Contains the notebooks for weekly subtasks and experimenting.
  ┣ 📂src                       <-- Source code.
- ┃ ┣ 📜TBD                     <-- TBD
+ ┃ ┣ 📜data_cleaning.py        <-- Module to clean data such as dropping correlated features
+ ┃ ┣ 📜encoder_utils.py        <-- Module of supervisor to provide helper functions
+ ┃ ┣ 📜encoding.py             <-- Module to encode data such as OHE and Poincarè embedding
+ ┃ ┣ 📜evaluate_regression.py  <-- Module to use custom average spearman scorer
+ ┃ ┣ 📜feature_engineering.py  <-- Module of feature engineering such as normalization
+ ┃ ┣ 📜gridsearch_hyperopt.py  <-- Module to apply gridsearch hyperoptimization for pointwise prediction
+ ┃ ┣ 📜load_datasets.py        <-- Helper module to load all datasets
+ ┃ ┣ 📜meta_information.py     <-- Module to populate dataset with meta information
+ ┃ ┣ 📜mlflow_regristry.py     <-- Module to handle the mlflow registry to track the model
+ ┃ ┣ 📜neural_net.py           <-- Module of the neural network for listwise predictions
+ ┃ ┣ 📜pairwise_method.py      <-- Module for the pairwise prediction
+ ┃ ┣ 📜pairwise_utils.py       <-- Helper module for the pairwise prediction
+ ┃ ┣ 📜pointwise_method.py     <-- Module for the pointwise prediction
+ ┃ ┗ 📜utils.py                <-- Utility functions such as parsing the config file ...
  ┣ 📜.gitignore                <-- Specifies intentionally untracked files to ignore when using Git.
  ┣ 📜README.md                 <-- The top-level README for developers using this project. 
  ┣ 📜main.py                   <-- Main function to execute pipeline   
- ┗ 📜requirements.txt          <-- The requirenments file for reproducing the environment, e.g. generated with 
-                                    'pip freeze > requirements.txt'.
+ ┗ 📜requirements.txt          <-- The requirenments file for reproducing the environment
 ```
 
 ## Setting up the environment and run the code ▶️
